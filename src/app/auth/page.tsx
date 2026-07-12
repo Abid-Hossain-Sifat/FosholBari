@@ -14,7 +14,7 @@ const loginN = "/Assets/loginN.jpg";
 
 // Helper to translate Better Auth English error messages to Bengali
 const translateError = (errMessage?: string | null): string => {
-  if (!errMessage) return "একটি অজানা সমস্যা দেখা দিয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+  if (!errMessage) return "একটি অজানা সমস্যা দেখা দিয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
   
   const msg = errMessage.toLowerCase();
   if (
@@ -23,13 +23,13 @@ const translateError = (errMessage?: string | null): string => {
     msg.includes("password is incorrect") || 
     msg.includes("password incorrect")
   ) {
-    return "ভুল ইমেইল অথবা পাসওয়ার্ড। সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।";
+    return "ভুল ইমেইল অথবা পাসওয়ার্ড। সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।";
   }
   if (msg.includes("user not found") || msg.includes("email is not registered")) {
-    return "এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।";
+    return "এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।";
   }
   if (msg.includes("email already in use") || msg.includes("email already exists") || msg.includes("email is already registered")) {
-    return "এই ইমেইল ঠিকানাটি ইতিমধ্যে ব্যবহার করা হয়েছে। অন্য ইমেইল ব্যবহার করুন।";
+    return "এই ইমেইল ঠিকানাটি ইতিমধ্যে ব্যবহার করা হয়েছে। অন্য ইমেইল ব্যবহার করুন।";
   }
   if (msg.includes("password must be") || msg.includes("password is too short")) {
     return "পাসওয়ার্ডটি খুব ছোট। পাসওয়ার্ড অন্তত ৮ অক্ষরের হতে হবে।";
@@ -225,14 +225,14 @@ const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] py-12 transition-colors duration-300">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] py-8 sm:py-12 px-4 transition-colors duration-300">
 
       {/* main container */}
-      <div className="w-full max-w-[80%] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative overflow-hidden">
+      <div className="w-full max-w-md sm:max-w-2xl lg:max-w-[80%] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center relative overflow-hidden">
         <motion.div
           layout
           transition={{ type: "spring", stiffness: 100, damping: 18 }}
-          className="flex flex-col space-y-6 lg:order-1"
+          className="hidden lg:flex flex-col space-y-6 lg:order-1"
         >
           {/* Headline */}
           <motion.div
@@ -254,7 +254,7 @@ const AuthPage = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
           >
             <div className="p-4 rounded-2xl bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800 shadow-sm">
               <Leaf className="w-6 h-6 text-[#316312] dark:text-[#8cc655] mb-2" />
@@ -296,10 +296,10 @@ const AuthPage = () => {
         <motion.div
           layout
           transition={{ type: "spring", stiffness: 100, damping: 18 }}
-          className="w-full flex justify-end lg:order-2"
+          className="w-full flex justify-center lg:justify-end lg:order-2"
         >
           {/* Form*/}
-          <div className="w-full max-w-xl p-8 lg:p-10 rounded-3xl bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800/50 shadow-2xl shadow-gray-300/50 dark:shadow-black/40 transition-all overflow-hidden">
+          <div className="w-full max-w-xl p-6 sm:p-8 lg:p-10 rounded-3xl bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800/50 shadow-2xl shadow-gray-300/50 dark:shadow-black/40 transition-all overflow-hidden">
 
             {/* Error Message Display */}
             {error && (
@@ -477,7 +477,7 @@ const AuthPage = () => {
                     </div>
 
                     {/* Number + email */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">মোবাইল নম্বর</label>
                         <div className="relative">
@@ -530,7 +530,7 @@ const AuthPage = () => {
                     </div>
 
                     {/* Password */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">পাসওয়ার্ড</label>
                         <div className="relative">

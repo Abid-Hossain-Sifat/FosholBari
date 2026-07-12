@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "./Components/Navbar";
+import Navbar from "../Components/Navbar";
 import { Hind_Siliguri } from 'next/font/google';
 import { Providers } from "./providers";
 
