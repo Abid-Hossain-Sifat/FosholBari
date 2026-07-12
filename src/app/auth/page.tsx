@@ -1,20 +1,228 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Truck, Leaf, Phone, UploadCloud } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
 // import image
 const loginD = "/Assets/loginD.jpg";
 const loginN = "/Assets/loginN.jpg";
 
+// Helper to translate Better Auth English error messages to Bengali
+const translateError = (errMessage?: string | null): string => {
+  if (!errMessage) return "একটি অজানা সমস্যা দেখা দিয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+  
+  const msg = errMessage.toLowerCase();
+  if (
+    msg.includes("invalid email") || 
+    msg.includes("invalid credentials") || 
+    msg.includes("password is incorrect") || 
+    msg.includes("password incorrect")
+  ) {
+    return "ভুল ইমেইল অথবা পাসওয়ার্ড। সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।";
+  }
+  if (msg.includes("user not found") || msg.includes("email is not registered")) {
+    return "এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।";
+  }
+  if (msg.includes("email already in use") || msg.includes("email already exists") || msg.includes("email is already registered")) {
+    return "এই ইমেইল ঠিকানাটি ইতিমধ্যে ব্যবহার করা হয়েছে। অন্য ইমেইল ব্যবহার করুন।";
+  }
+  if (msg.includes("password must be") || msg.includes("password is too short")) {
+    return "পাসওয়ার্ডটি খুব ছোট। পাসওয়ার্ড অন্তত ৮ অক্ষরের হতে হবে।";
+  }
+  if (msg.includes("failed to fetch") || msg.includes("network error")) {
+    return "সার্ভারের সাথে সংযোগ করা যাচ্ছে না। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করুন।";
+  }
+  
+  return errMessage;
+};
+
 const AuthPage = () => {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  // If user is already logged in, redirect them to the home page
+  useEffect(() => {
+    if (session) {
+      router.replace("/");
+    }
+  }, [session, router]);
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState("buyer");
   const [profileImage, setProfileImage] = useState<File | null>(null);
+
+  // Form states
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  const [signupName, setSignupName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Helper to upload image to ImgBB
+  const uploadImageToImgBB = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_IMAGEBB_API;
+      if (!apiKey) {
+        throw new Error("NEXT_PUBLIC_IMAGEBB_API environment variable is not defined");
+      }
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        return data.data.url;
+      }
+    } catch (err) {
+      console.error("ImgBB upload error:", err);
+    }
+    return null;
+  };
+
+  // Credentials Login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const { data, error: loginErr } = await authClient.signIn.email({
+        email: loginEmail,
+        password: loginPassword,
+        callbackURL: window.location.origin + "/",
+      });
+
+      if (loginErr) {
+        const msg = translateError(loginErr.message);
+        setError(msg);
+        toast.error(msg);
+      } else {
+        toast.success("লগইন সফল হয়েছে!");
+        window.location.href = "/";
+      }
+    } catch (err) {
+      const msg = translateError(err instanceof Error ? err.message : null);
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Credentials Signup (registers without auto login, redirects to login form)
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (signupPassword !== signupConfirmPassword) {
+      const msg = "পাসওয়ার্ড দুটি মিলছে না!";
+      setError(msg);
+      toast.error(msg);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      let imageUrl = "";
+      if (profileImage) {
+        const uploadedUrl = await uploadImageToImgBB(profileImage);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        } else {
+          const msg = "প্রোফাইল ছবি আপলোড ব্যর্থ হয়েছে।";
+          setError(msg);
+          toast.error(msg);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const signUpRole = role === "buyer" ? "Buyer" : "Farmer";
+
+      const { data, error: signupErr } = await authClient.signUp.email({
+        email: signupEmail,
+        password: signupPassword,
+        name: signupName,
+        phoneNumber: signupPhone,
+        role: signUpRole,
+        image: imageUrl || undefined,
+        callbackURL: window.location.origin + "/",
+      });
+
+      if (signupErr) {
+        const msg = translateError(signupErr.message);
+        setError(msg);
+        toast.error(msg);
+      } else {
+        // Show success and switch to login screen as requested
+        const msg = "নিবন্ধন সফল হয়েছে! অনুগ্রহ করে লগইন করুন।";
+        setSuccess(msg);
+        toast.success(msg);
+        setIsLogin(true);
+        // Clear signup fields
+        setSignupName("");
+        setSignupPhone("");
+        setSignupEmail("");
+        setSignupPassword("");
+        setSignupConfirmPassword("");
+        setProfileImage(null);
+      }
+    } catch (err) {
+      const msg = translateError(err instanceof Error ? err.message : null);
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google OAuth Login
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: window.location.origin + "/",
+      });
+    } catch (err) {
+      const msg = translateError(err instanceof Error ? err.message : "গুগল দিয়ে লগইন করা যায়নি।");
+      setError(msg);
+      toast.error(msg);
+      setLoading(false);
+    }
+  };
+
+  // Prevent UI flashing while checking session or if redirecting
+  if (isPending || session) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] transition-colors duration-300">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#316312] dark:border-[#8cc655] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">অপেক্ষা করুন...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] py-12 transition-colors duration-300">
@@ -93,6 +301,28 @@ const AuthPage = () => {
           {/* Form*/}
           <div className="w-full max-w-xl p-8 lg:p-10 rounded-3xl bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800/50 shadow-2xl shadow-gray-300/50 dark:shadow-black/40 transition-all overflow-hidden">
 
+            {/* Error Message Display */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 text-xs font-semibold rounded-xl text-center"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Success Message Display */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 text-green-600 dark:text-green-400 text-xs font-semibold rounded-xl text-center"
+              >
+                {success}
+              </motion.div>
+            )}
+
             <AnimatePresence mode="wait">
               {isLogin ? (
                 // ================= Login =================
@@ -110,12 +340,19 @@ const AuthPage = () => {
                   </div>
 
                   <div className="space-y-5">
-                    <form className="space-y-4">
+                    <form onSubmit={handleLogin} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">ইমেইল বা ফোন নম্বর</label>
+                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">ইমেইল ঠিকানা</label>
                         <div className="relative">
                           <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                          <input type="text" placeholder="example@mail.com" className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200" />
+                          <input
+                            type="email"
+                            required
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            placeholder="example@mail.com"
+                            className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
+                          />
                         </div>
                       </div>
 
@@ -123,7 +360,14 @@ const AuthPage = () => {
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">পাসওয়ার্ড</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                          <input type={showPassword ? "text" : "password"} placeholder="••••••••" className="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200" />
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            required
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
+                          />
                           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600">
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
@@ -133,8 +377,12 @@ const AuthPage = () => {
                         </div>
                       </div>
 
-                      <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold rounded-xl transition shadow-lg shadow-green-900/10 dark:shadow-none text-sm">
-                        লগইন করুন <ArrowRight className="w-4 h-4" />
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold rounded-xl transition shadow-lg shadow-green-900/10 dark:shadow-none text-sm cursor-pointer disabled:opacity-55"
+                      >
+                        {loading ? "লগইন হচ্ছে..." : "লগইন করুন"} <ArrowRight className="w-4 h-4" />
                       </button>
                     </form>
 
@@ -146,7 +394,9 @@ const AuthPage = () => {
 
                     <button
                       type="button"
-                      className="w-full flex items-center justify-center gap-3 py-3.5 bg-white dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a2622] text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition text-sm"
+                      onClick={handleGoogleLogin}
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-3 py-3.5 bg-white dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a2622] text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition text-sm cursor-pointer disabled:opacity-55"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
@@ -161,7 +411,7 @@ const AuthPage = () => {
                   <div className="text-center">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       আপনার কি অ্যাকাউন্ট নেই?{" "}
-                      <button onClick={() => setIsLogin(false)} className="text-[#316312] dark:text-[#8cc655] font-bold hover:underline">নতুন অ্যাকাউন্ট খুলুন</button>
+                      <button onClick={() => { setIsLogin(false); setError(""); setSuccess(""); }} className="text-[#316312] dark:text-[#8cc655] font-bold hover:underline cursor-pointer">নতুন অ্যাকাউন্ট খুলুন</button>
                     </p>
                   </div>
                 </motion.div>
@@ -180,7 +430,7 @@ const AuthPage = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">আসুন আমাদের পরিবারের অংশ হয়ে যান।</p>
                   </div>
 
-                  <form className="space-y-4">
+                  <form onSubmit={handleSignup} className="space-y-4">
                     {/* Role */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">আপনার ভূমিকা নির্বাচন করুন</label>
@@ -188,7 +438,7 @@ const AuthPage = () => {
                         <button
                           type="button"
                           onClick={() => setRole("buyer")}
-                          className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                          className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
                             role === "buyer"
                               ? "bg-[#316312] dark:bg-[#8cc655] text-white dark:text-[#111a17]"
                               : "bg-transparent border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300"
@@ -199,7 +449,7 @@ const AuthPage = () => {
                         <button
                           type="button"
                           onClick={() => setRole("farmer")}
-                          className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                          className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
                             role === "farmer"
                               ? "bg-[#316312] dark:bg-[#8cc655] text-white dark:text-[#111a17]"
                               : "bg-transparent border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300"
@@ -217,6 +467,9 @@ const AuthPage = () => {
                         <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                         <input
                           type="text"
+                          required
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
                           placeholder="আপনার পুরো নাম লিখুন"
                           className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                         />
@@ -231,6 +484,9 @@ const AuthPage = () => {
                           <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                           <input
                             type="text"
+                            required
+                            value={signupPhone}
+                            onChange={(e) => setSignupPhone(e.target.value)}
                             placeholder="+৮৮০১XXXXXXXXX"
                             className="w-full pl-12 pr-2 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                           />
@@ -241,7 +497,10 @@ const AuthPage = () => {
                         <div className="relative">
                           <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                           <input
-                            type="text"
+                            type="email"
+                            required
+                            value={signupEmail}
+                            onChange={(e) => setSignupEmail(e.target.value)}
                             placeholder="example@mail.com"
                             className="w-full pl-12 pr-2 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                           />
@@ -278,6 +537,9 @@ const AuthPage = () => {
                           <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                           <input
                             type={showPassword ? "text" : "password"}
+                            required
+                            value={signupPassword}
+                            onChange={(e) => setSignupPassword(e.target.value)}
                             placeholder="••••••••"
                             className="w-full pl-12 pr-9 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                           />
@@ -296,6 +558,9 @@ const AuthPage = () => {
                           <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                           <input
                             type={showConfirmPassword ? "text" : "password"}
+                            required
+                            value={signupConfirmPassword}
+                            onChange={(e) => setSignupConfirmPassword(e.target.value)}
                             placeholder="••••••••"
                             className="w-full pl-12 pr-9 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                           />
@@ -310,15 +575,21 @@ const AuthPage = () => {
                       </div>
                     </div>
 
-                    <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold rounded-xl transition shadow-lg shadow-green-900/10 dark:shadow-none text-sm">
-                      নিবন্ধন করুন <ArrowRight className="w-4 h-4" />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold rounded-xl transition shadow-lg shadow-green-900/10 dark:shadow-none text-sm cursor-pointer disabled:opacity-55"
+                    >
+                      {loading ? "নিবন্ধন হচ্ছে..." : "নিবন্ধন করুন"} <ArrowRight className="w-4 h-4" />
                     </button>
                   </form>
+
+
 
                   <div className="text-center">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
-                      <button onClick={() => setIsLogin(true)} className="text-[#316312] dark:text-[#8cc655] font-bold hover:underline">লগইন করুন</button>
+                      <button onClick={() => { setIsLogin(true); setError(""); setSuccess(""); }} className="text-[#316312] dark:text-[#8cc655] font-bold hover:underline cursor-pointer">লগইন করুন</button>
                     </p>
                   </div>
                 </motion.div>
