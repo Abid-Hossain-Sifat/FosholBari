@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Truck, Leaf, Phone, UploadCloud } from "lucide-react";
 
-// public ফোল্ডারের ইমেজ import করা যায় না, তাই সরাসরি path ব্যবহার করছি
+// import image
 const loginD = "/Assets/loginD.jpg";
 const loginN = "/Assets/loginN.jpg";
 
@@ -14,23 +14,19 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState("buyer");
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] py-12 transition-colors duration-300">
 
-      {/* মেইন অ্যালাইনমেন্ট কন্টেইনার: navbar-এর সাথে মিলিয়ে max-w-[80%] mx-auto */}
+      {/* main container */}
       <div className="w-full max-w-[80%] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative overflow-hidden">
-
-        {/* ================= বাম পাশ: ইমেজ এবং ফিচার ইনফো =================
-             Login এবং Register উভয় অবস্থাতেই অপরিবর্তিত থাকে, শুধু ডান পাশের ফর্ম বদলায়
-             mount হওয়ার সময় প্রতিবার fade + slide-up animation চলবে */}
         <motion.div
           layout
           transition={{ type: "spring", stiffness: 100, damping: 18 }}
           className="flex flex-col space-y-6 lg:order-1"
         >
-          {/* হেডলাইন ও সাবহেডলাইন */}
+          {/* Headline */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -45,7 +41,7 @@ const AuthPage = () => {
             </p>
           </motion.div>
 
-          {/* মিনি ইনফো কার্ডস */}
+          {/* info cards */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -64,7 +60,7 @@ const AuthPage = () => {
             </div>
           </motion.div>
 
-          {/* নেক্সট ইমেজ কন্টেইনার (লাইট/ডার্ক মোড অটো হ্যান্ডেলড) */}
+          {/* Image container */}
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -89,21 +85,17 @@ const AuthPage = () => {
             />
           </motion.div>
         </motion.div>
-
-        {/* ================= ডান পাশ: ফর্ম সেকশন =================
-             শুধু এই অংশটাই isLogin অনুযায়ী animation সহ বদলায়
-             আগের width (max-w-md) রেখে ডান কিনারা থেকে শুরু হবে (flex justify-end) */}
         <motion.div
           layout
           transition={{ type: "spring", stiffness: 100, damping: 18 }}
           className="w-full flex justify-end lg:order-2"
         >
-          {/* ফর্ম কার্ড */}
+          {/* Form*/}
           <div className="w-full max-w-xl p-8 lg:p-10 rounded-3xl bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800/50 shadow-2xl shadow-gray-300/50 dark:shadow-black/40 transition-all overflow-hidden">
 
             <AnimatePresence mode="wait">
               {isLogin ? (
-                // ================= লগইন ফর্ম =================
+                // ================= Login =================
                 <motion.div
                   key="login-form"
                   initial={{ opacity: 0, x: 20 }}
@@ -174,7 +166,7 @@ const AuthPage = () => {
                   </div>
                 </motion.div>
               ) : (
-                // ================= রেজিস্ট্রেশন ফর্ম =================
+                // ================= Registration =================
                 <motion.div
                   key="register-form"
                   initial={{ opacity: 0, x: -20 }}
@@ -189,7 +181,7 @@ const AuthPage = () => {
                   </div>
 
                   <form className="space-y-4">
-                    {/* ভূমিকা নির্বাচন */}
+                    {/* Role */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">আপনার ভূমিকা নির্বাচন করুন</label>
                       <div className="flex gap-3">
@@ -218,7 +210,7 @@ const AuthPage = () => {
                       </div>
                     </div>
 
-                    {/* পুরো নাম */}
+                    {/* Name */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">পুরো নাম</label>
                       <div className="relative">
@@ -231,7 +223,7 @@ const AuthPage = () => {
                       </div>
                     </div>
 
-                    {/* মোবাইল নম্বর + ইমেইল ঠিকানা */}
+                    {/* Number + email */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">মোবাইল নম্বর</label>
@@ -239,7 +231,7 @@ const AuthPage = () => {
                           <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                           <input
                             type="text"
-                            placeholder="+৮৮০১৯XXXXXXXX"
+                            placeholder="+৮৮০১XXXXXXXXX"
                             className="w-full pl-12 pr-2 py-3 bg-gray-50 dark:bg-[#121a18] border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] text-gray-800 dark:text-gray-200"
                           />
                         </div>
@@ -257,7 +249,7 @@ const AuthPage = () => {
                       </div>
                     </div>
 
-                    {/* প্রোফাইল ছবি আপলোড */}
+                    {/* Profile */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">প্রোফাইল ছবি আপলোড</label>
                       <label
@@ -278,7 +270,7 @@ const AuthPage = () => {
                       </label>
                     </div>
 
-                    {/* পাসওয়ার্ড + নিশ্চিত করুন */}
+                    {/* Password */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">পাসওয়ার্ড</label>

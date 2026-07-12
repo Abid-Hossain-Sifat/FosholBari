@@ -6,13 +6,12 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sprout, Sun, Moon, User } from "lucide-react";
 
-// --- mounted check এখানেই লেখা, আলাদা ফাইল লাগবে না ---
 const emptySubscribe = () => () => {};
 function useMounted() {
   return useSyncExternalStore(
     emptySubscribe,
-    () => true,   // client-এ সবসময় true
-    () => false   // server-এ সবসময় false
+    () => true, 
+    () => false
   );
 }
 // --------------------------------------------------------
@@ -114,7 +113,7 @@ const Navbar = () => {
           </button>
 
           {/* User login */}
-          <Link href="/login" aria-label="User Profile">
+          <Link href="/auth" aria-label="User Profile">
             <div
               className={`p-2 rounded-full border transition-all duration-200 ${
                 darkMode
