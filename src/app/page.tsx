@@ -1,5 +1,7 @@
+import { HarvestLoader } from "@/Components/loading";
+
 export default function Home() {
   return (
-    <div></div>
+    <HarvestLoader />
   );
 }

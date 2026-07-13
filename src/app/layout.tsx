@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "../Components/Navbar";
-import { Hind_Siliguri } from 'next/font/google';
+import { Hind_Siliguri, Manrope } from 'next/font/google'
 import { Providers } from "./providers";
+import { Suspense } from "react";
+import { LoadingProvider } from "@/Components/loading";
 
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans' })
 const hindSiliguri = Hind_Siliguri({
   subsets: ['bengali', 'latin'],
   weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
+  variable: '--font-bengali',
+})
 
 export const metadata: Metadata = {
   title: "ফসলবাড়ি",
@@ -22,10 +25,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className="h-full antialiased" suppressHydrationWarning>
-      <body className={`${hindSiliguri.className} min-h-full flex flex-col`}>
+      <body className={`${hindSiliguri.variable} ${manrope.variable} ${hindSiliguri.className} min-h-full flex flex-col`}>
         <Providers>
-          <Navbar />
-          {children}
+          <Suspense fallback={null}>
+            <LoadingProvider>
+              <Navbar />
+              {children}
+            </LoadingProvider>
+          </Suspense>
         </Providers>
       </body>
     </html>

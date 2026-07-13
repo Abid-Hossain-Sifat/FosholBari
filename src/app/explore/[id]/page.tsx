@@ -30,8 +30,6 @@ const staticFeatures = [
   { icon: RefreshCw, text: "ফ্রেশ গ্যারান্টি" }
 ];
 
-// unit অনুযায়ী কতটুকু কিনবেন তার অপশন — এগুলো code-এই fixed থাকবে,
-// database-এ আলাদা করে weights array রাখার দরকার নেই
 const weightOptionsByUnit: Record<string, string[]> = {
   "প্রতি কেজি": ["২৫০ গ্রাম", "৫০০ গ্রাম", "১ কেজি"],
   "প্রতি লিটার": ["৫০০ মিলি", "১ লিটার", "২ লিটার"],
