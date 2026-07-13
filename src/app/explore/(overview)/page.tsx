@@ -1,29 +1,41 @@
-'use client'
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { ShoppingCart, ChevronDown, ChevronDown as SortIcon } from 'lucide-react';
 import Link from 'next/link';
+import { exploreCollection } from '../../../lib/data';
 
 interface Product {
-  id: number;
-  tag: string;
+  _id: string;
   name: string;
+  tag: string;
+  category: string;
   unit: string;
+  rating?: number;
+  reviewCount?: number;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
-  badge?: { text: string; type: 'new' | 'limited' };
+  badge?: { text: string; type: string };
+  weights?: string[];
+  description?: string;
+  bulletPoints?: string[];
 }
 
-const dummyProducts: Product[] = [
-  { id: 1, tag: 'টাটকা', name: 'দেশি টমেটো (ফ্রেশ)', unit: 'প্রতি কেজি', price: 60, image: 'https://images.unsplash.com/photo-1595855759920-86582396756a?w=500', badge: { text: '২৫% ছাড়', type: 'new' } },
-  { id: 2, tag: 'সিজনাল', name: 'সিজনাল ফেলের ঝুড়ি', unit: 'প্রতি কেজি', price: 350, image: 'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=500' },
-  { id: 3, tag: 'খাঁটি', name: 'বিস্তৃত ঘি জার', unit: 'প্রতি লিটার', price: 90, image: 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=500' },
-  { id: 4, tag: 'অর্গানিক', name: 'অর্গানিক লাল চাল', unit: 'প্রতি কেজি', price: 120, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500' },
-  { id: 5, tag: 'তাজা', name: 'তাজা পালং শাক', unit: 'প্রতি আঁটি', price: 30, image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=500', badge: { text: 'সীমিত স্টক', type: 'limited' } },
-  { id: 6, tag: 'প্রিমিয়াম', name: 'প্রিমিয়াম ফলের বক্স', unit: 'প্রতি বক্স', price: 450, image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500' },
-];
+const ExplorePage = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const ExplorePage: React.FC = () => {
+  useEffect(() => {
+    const loadProducts = async () => {
+      const data = await exploreCollection();
+      setProducts(data);
+      setLoading(false);
+    };
+    loadProducts();
+  }, []);
+
   const gridVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
@@ -34,13 +46,21 @@ const ExplorePage: React.FC = () => {
     visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-[90%] mx-auto mt-10 text-center py-20 text-gray-500 dark:text-gray-400">
+        লোড হচ্ছে...
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div>
       {/* Top Banner section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#316312] dark:text-[#8cc655]">তাজা পণ্যসমূহ</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{dummyProducts.length}টি পণ্য পাওয়া গেছে</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{products.length}টি পণ্য পাওয়া গেছে</p>
         </div>
 
         {/* Sort Dropdown */}
@@ -55,20 +75,20 @@ const ExplorePage: React.FC = () => {
       </div>
 
       {/* Product Cards Grid */}
-      <motion.div 
+      <motion.div
         variants={gridVariants}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6"
       >
-        {dummyProducts.map((product) => (
+        {products.map((product) => (
           <motion.div
-            key={product.id}
+            key={product._id}
             variants={cardVariants}
             whileHover={{ y: -6 }}
             className="bg-white dark:bg-[#1a2622] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-lg dark:hover:shadow-black/30 transition-shadow duration-300 flex flex-col justify-between group"
           >
-            <Link href={`/explore/${product.id}`} className="block cursor-pointer flex-1">
+            <Link href={`/explore/${product._id}`} className="block cursor-pointer flex-1">
               {/* Image & Badge */}
               <div className="relative aspect-[4/3] bg-gray-50 dark:bg-[#111a17] overflow-hidden">
                 <img
@@ -104,11 +124,18 @@ const ExplorePage: React.FC = () => {
             {/* Price & Action Button */}
             <div className="p-3 sm:p-4 pt-0">
               <div className="flex items-center justify-between mt-1 gap-2">
-                <span className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">
-                  ৳{product.price}
-                </span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">
+                    ৳{product.price}
+                  </span>
+                  {product.originalPrice && (
+                    <span className="text-xs text-gray-400 line-through">
+                      ৳{product.originalPrice}
+                    </span>
+                  )}
+                </div>
 
-                <motion.button 
+                <motion.button
                   whileTap={{ scale: 0.95 }}
                   className="flex items-center gap-1.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-xs font-semibold px-3 py-2 rounded-full transition-colors duration-200 whitespace-nowrap shadow-sm"
                 >
@@ -123,7 +150,7 @@ const ExplorePage: React.FC = () => {
 
       {/* Load More Button */}
       <div className="flex justify-center mt-12">
-        <motion.button 
+        <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2622] text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm"
@@ -131,7 +158,7 @@ const ExplorePage: React.FC = () => {
           আরও দেখুন <ChevronDown className="w-4 h-4" />
         </motion.button>
       </div>
-    </>
+    </div>
   );
 };
 

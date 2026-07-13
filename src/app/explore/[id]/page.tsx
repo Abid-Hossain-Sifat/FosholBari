@@ -1,117 +1,53 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronRight, Check, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { exploreProductById } from '../../../lib/data';
 
 interface Product {
+  _id: string;
   name: string;
   tag: string;
   category: string;
-  rating: number;
-  reviewCount: number;
+  unit: string;
+  rating?: number;
+  reviewCount?: number;
   price: number;
-  originalPrice: number;
-  discountPercent: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
-  weights: string[];
-  description: string;
-  bulletPoints: string[];
+  badge?: { text: string; type: string };
+  weights?: string[];
+  description?: string;
+  bulletPoints?: string[];
 }
-
-const allProductsData: Record<number, Product> = {
-  1: {
-    name: "দেশি টমেটো (ফ্রেশ)",
-    tag: "টাটকা",
-    category: "শাক-সবজি",
-    rating: 4.8,
-    reviewCount: 123,
-    price: 60,
-    originalPrice: 80,
-    discountPercent: 25,
-    image: "https://images.unsplash.com/photo-1595855759920-86582396756a?w=600",
-    weights: ["২৫০ গ্রাম", "৫০০ গ্রাম", "১ কেজি"],
-    description: "আমাদের দেশি টমেটো সরাসরি কৃষকের জমি থেকে সংগ্রহ করা হয়। কোনো প্রকার ক্ষতিকর রাসায়নিক ছাড়াই প্রাকৃতিকভাবে বেড়ে ওঠা এই টমেটো স্বাদে এবং পুষ্টিতে অতুলনীয়। রান্না হোক বা সালাদ, টাটকা টমেটোর আসল স্বাদ পেতে আজই অর্ডার করুন।",
-    bulletPoints: ["সরাসরি বাগান থেকে সংগৃহীত।", "উচ্চ ভিটামিন-সি সমৃদ্ধ।", "কোনো প্রিজারভেটিভ নেই।", "নিটোল রসালো এবং সুস্বাদু।"]
-  },
-  2: {
-    name: "সিজনাল ফলের ঝুড়ি",
-    tag: "সিজনাল",
-    category: "ফলমূল",
-    rating: 4.9,
-    reviewCount: 85,
-    price: 350,
-    originalPrice: 400,
-    discountPercent: 12,
-    image: "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=600",
-    weights: ["১ ঝুড়ি", "২ ঝুড়ি"],
-    description: "বাগান থেকে বাছাইকৃত সেরা ও মিষ্টি সিজনাল ফলের সমাহার। আম, জাম, লিচু কিংবা আপেল-কমলা যা-ই বলুন, ঋতুভিত্তিক সেরা ফলগুলো পাবেন এক ফ্রেমেই।",
-    bulletPoints: ["১০০% মিষ্টি ও রসালো ফলের গ্যারান্টি।", "কোনো কেমিক্যাল বা ফরমালিন মুক্ত।", "পরিবার বা উপহার দেওয়ার জন্য সেরা প্যাক।"]
-  },
-  3: {
-    name: "খাঁটি গালা ঘি জার",
-    tag: "খাঁটি",
-    category: "দুগ্ধজাত পণ্য",
-    rating: 4.7,
-    reviewCount: 96,
-    price: 90,
-    originalPrice: 100,
-    discountPercent: 10,
-    image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=600",
-    weights: ["২০০ গ্রাম", "৫০০ গ্রাম", "১ লিটার"],
-    description: "গ্রামের খামারিদের থেকে আনা খাঁটি দুধের মাখন থেকে তৈরি সুগন্ধি গালা ঘি। গরম ভাতে কিংবা রান্নায় স্বাদ ও ঘ্রাণ দ্বিগুণ করতে এর জুড়ি নেই।",
-    bulletPoints: ["ঐতিহ্যবাহী পদ্ধতিতে তৈরি।", "তীব্র ও আকর্ষণীয় সুবাস।", "দীর্ঘদিন সংরক্ষণযোগ্য।"]
-  },
-  4: {
-    name: "অর্গানিক লাল চাল",
-    tag: "অর্গানিক",
-    category: "খাদ্যশস্য",
-    rating: 4.6,
-    reviewCount: 54,
-    price: 120,
-    originalPrice: 150,
-    discountPercent: 20,
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600",
-    weights: ["১ কেজি", "৫ কেজি", "১০ কেজি"],
-    description: "ডায়াবেটিস ও স্বাস্থ্য সচেতন মানুষের জন্য ফাইবার সমৃদ্ধ ঢেঁকি ছাঁটা অর্গানিক লাল চাল। পুষ্টিগুণে ভরপুর এই চাল দৈনন্দিন ডায়েটের জন্য দারুণ উপকারী।",
-    bulletPoints: ["ফাইবারে ভরপুর ও লো-জিআই সমৃদ্ধ।", "মিলিশ পোলিশ ছাড়া প্রাকৃতিক লাল চাল।", "সহজে হজমযোগ্য।"]
-  },
-  5: {
-    name: "তাজা পালং শাক",
-    tag: "তাজা",
-    category: "শাক-সবজি",
-    rating: 4.5,
-    reviewCount: 42,
-    price: 30,
-    originalPrice: 40,
-    discountPercent: 25,
-    image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600",
-    weights: ["১ আঁটি", "৩ আঁটি"],
-    description: "প্রতিদিন সকালে মাঠ থেকে তুলে আনা তাজা ও সবুজ পালং শাক। আয়রন এবং পুষ্টি উপাদানে ভরপুর, যা আপনার স্বাস্থ্যের সুরক্ষায় দারুণ কার্যকরী।",
-    bulletPoints: ["বিষমুক্ত চাষাবাদ।", "অত্যন্ত কচি ও তাজা পাতা।", "আয়রন ও ভিটামিন এ-র অন্যতম উৎস।"]
-  },
-  6: {
-    name: "প্রিমিয়াম ফলের বক্স",
-    tag: "প্রিমিয়াম",
-    category: "ফলমূল",
-    rating: 5.0,
-    reviewCount: 210,
-    price: 450,
-    originalPrice: 500,
-    discountPercent: 10,
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600",
-    weights: ["১ বক্স (স্ট্যান্ডার্ড)", "১ লার্জ বক্স"],
-    description: "দেশী ও বিদেশী প্রিমিয়াম কোয়ালিটির বাছাই করা ফলের প্রিমিয়াম প্যাক। করপোরেট গিফটিং কিংবা স্পেশাল ওকেশন বা উৎসবের জন্য এটি একদম পারফেক্ট।",
-    bulletPoints: ["আমদানিকৃত প্রিমিয়াম ক্রিস্পি ফল।", "আকর্ষণীয় ও হাইজেনিক বক্স প্যাকেজিং।", "ভিটামিন ও খনিজের পাওয়ারহাউস।"]
-  }
-};
 
 const staticFeatures = [
   { icon: ShieldCheck, text: "১০০% অর্গানিক" },
   { icon: Truck, text: "একই দিনে ডেলিভারি" },
   { icon: RefreshCw, text: "ফ্রেশ গ্যারান্টি" }
 ];
+
+// unit অনুযায়ী কতটুকু কিনবেন তার অপশন — এগুলো code-এই fixed থাকবে,
+// database-এ আলাদা করে weights array রাখার দরকার নেই
+const weightOptionsByUnit: Record<string, string[]> = {
+  "প্রতি কেজি": ["২৫০ গ্রাম", "৫০০ গ্রাম", "১ কেজি"],
+  "প্রতি লিটার": ["৫০০ মিলি", "১ লিটার", "২ লিটার"],
+  "প্রতি বোতল": ["২৫০ মিলি", "৫০০ মিলি", "১ লিটার"],
+  "প্রতি আঁটি": ["১ আঁটি", "৩ আঁটি"],
+  "প্রতি পিস": ["১ পিস", "২ পিস", "৫ পিস"],
+  "প্রতি ডজন": ["৬ পিস", "১২ পিস", "৩০ পিস"],
+  "প্রতি বক্স": ["১ বক্স (স্ট্যান্ডার্ড)", "১ লার্জ বক্স"],
+  "প্রতি ঝুড়ি": ["১ ঝুড়ি", "২ ঝুড়ি"],
+  "প্রতি প্যাকেট": ["১ প্যাকেট", "২ প্যাকেট", "৫ প্যাকেট"],
+};
+
+const getWeightOptions = (product: Product): string[] => {
+  if (product.weights && product.weights.length > 0) return product.weights;
+  return weightOptionsByUnit[product.unit] || [product.unit];
+};
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -136,18 +72,42 @@ const tabContentVariants: Variants = {
 
 const ExploreDetails = () => {
   const params = useParams();
-  const productId = Number(params.id);
-  const product = allProductsData[productId];
+  const productId = params.id as string;
 
-  const [selectedWeight, setSelectedWeight] = useState<string>(product?.weights[0] || "");
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedWeight, setSelectedWeight] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'description' | 'nutrition'>('description');
   const [isFavorite, setIsFavorite] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      const found = await exploreProductById(productId);
+
+      setProduct(found);
+      if (found) {
+        const options = getWeightOptions(found);
+        setSelectedWeight(options[0]);
+      }
+      setLoading(false);
+    };
+    loadProduct();
+  }, [productId]);
 
   const handleBuyNow = () => {
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1800);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] text-gray-500 dark:text-gray-400">
+        লোড হচ্ছে...
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -164,8 +124,10 @@ const ExploreDetails = () => {
     );
   }
 
-  const fullStars = Math.floor(product.rating);
-  const hasHalfStar = product.rating - fullStars >= 0.5;
+  const rating = product.rating ?? 0;
+  const reviewCount = product.reviewCount ?? 0;
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating - fullStars >= 0.5;
 
   return (
     <div className="min-h-screen w-full bg-[#faf9f5] text-[#1A1A1A] dark:bg-[#111a17] dark:text-[#F8FAFC] py-6 sm:py-10 px-4 sm:px-6 transition-colors duration-300">
@@ -249,21 +211,28 @@ const ExploreDetails = () => {
                     />
                   ))}
                 </div>
-                <span className="font-bold text-gray-700 dark:text-gray-200">{product.rating}</span>
-                <span className="text-gray-400 dark:text-gray-500">({product.reviewCount} রিভিউ)</span>
+                <span className="font-bold text-gray-700 dark:text-gray-200">{rating > 0 ? rating : "নতুন"}</span>
+                <span className="text-gray-400 dark:text-gray-500">
+                  {reviewCount > 0 ? `(${reviewCount} রিভিউ)` : "(এখনো কোনো রিভিউ নেই)"}
+                </span>
               </div>
 
               <div className="flex items-baseline gap-3 pt-2">
                 <span className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">
                   ৳{product.price}
                 </span>
+                {product.originalPrice && (
+                  <span className="text-base text-gray-400 line-through">
+                    ৳{product.originalPrice}
+                  </span>
+                )}
               </div>
 
               {/* Weights */}
               <div className="space-y-2 pt-2">
-                <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">ওজন নির্বাচন করুন:</h4>
+                <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">কতটুকু কিনবেন:</h4>
                 <div className="flex flex-wrap gap-2.5">
-                  {product.weights.map((weight) => (
+                  {getWeightOptions(product).map((weight) => (
                     <motion.button
                       key={weight}
                       whileTap={{ scale: 0.95 }}
@@ -378,12 +347,14 @@ const ExploreDetails = () => {
                   exit="exit"
                   className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed"
                 >
-                  <p>{product.description}</p>
-                  <ul className="list-disc pl-5 space-y-1.5 font-medium">
-                    {product.bulletPoints.map((point, index) => (
-                      <li key={index}>{point}</li>
-                    ))}
-                  </ul>
+                  <p>{product.description || "এই পণ্যের বিস্তারিত বিবরণ এখনো যোগ করা হয়নি।"}</p>
+                  {product.bulletPoints && product.bulletPoints.length > 0 && (
+                    <ul className="list-disc pl-5 space-y-1.5 font-medium">
+                      {product.bulletPoints.map((point, index) => (
+                        <li key={index}>{point}</li>
+                      ))}
+                    </ul>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
