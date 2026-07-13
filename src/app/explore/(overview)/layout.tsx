@@ -1,32 +1,113 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, Variants } from 'framer-motion';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { exploreFiltersMeta } from '../../../lib/data';
 
 interface ExploreLayoutProps {
   children: React.ReactNode;
 }
 
-const categories = ['শাক-সবজি', 'ফলমূল', 'দুগ্ধজাত পণ্য', 'মাংসজাত পণ্য'];
-const tags = ['টাটকা', 'সিজনাল', 'খাঁটি', 'অর্গানিক', 'তাজা', 'প্রিমিয়াম'];
+const ExploreLayoutContent: React.FC<ExploreLayoutProps> = ({ children }) => {
+  // 1. Hooks (Next.js & React State/Effects)
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
-  const [priceRange, setPriceRange] = useState<number>(1000);
-  const [checkedCategories, setCheckedCategories] = useState<string[]>(['শাক-সবজি']);
-  const [checkedTags, setCheckedTags] = useState<string[]>([]);
-  const [organicOnly, setOrganicOnly] = useState<boolean>(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [localPrice, setLocalPrice] = useState<number>(() => {
+    const priceParam = searchParams.get('maxPrice');
+    return priceParam ? Number(priceParam) : 1000;
+  });
+
+  useEffect(() => {
+    const loadMeta = async () => {
+      try {
+        const data = await exploreFiltersMeta();
+        setCategories(data.categories || []);
+        setTags(data.tags || []);
+      } catch (err) {
+        console.error("Error loading filters:", err);
+      }
+    };
+    loadMeta();
+  }, []);
+
+  const priceParam = searchParams.get('maxPrice');
+  const priceRange = priceParam ? Number(priceParam) : 1000;
+
+  // 2. Non-hook variable declarations
+  const categoriesParam = searchParams.get('categories');
+  const checkedCategories = categoriesParam 
+    ? categoriesParam.split(',').filter(Boolean)
+    : [];
+  
+  const isAllCategoriesSelected = checkedCategories.length === 0;
+
+  const tagsParam = searchParams.get('tags');
+  const checkedTags = tagsParam
+    ? tagsParam.split(',').filter(Boolean)
+    : [];
+
+  const isAllTagsSelected = checkedTags.length === 0;
+
+  const updateFilters = (newCategories: string[], newTags: string[], newPrice: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (newCategories.length > 0) {
+      params.set('categories', newCategories.join(','));
+    } else {
+      params.delete('categories');
+    }
+
+    if (newTags.length > 0) {
+      params.set('tags', newTags.join(','));
+    } else {
+      params.delete('tags');
+    }
+
+    if (newPrice < 1000) {
+      params.set('maxPrice', newPrice.toString());
+    } else {
+      params.delete('maxPrice');
+    }
+
+    // Always reset to page 1 when filters change
+    params.delete('page');
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const toggleCategory = (cat: string) => {
-    setCheckedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
+    const updated = checkedCategories.includes(cat)
+      ? checkedCategories.filter((c) => c !== cat)
+      : [...checkedCategories, cat];
+    updateFilters(updated, checkedTags, priceRange);
+  };
+
+  const toggleAllCategories = () => {
+    if (!isAllCategoriesSelected) {
+      updateFilters([], checkedTags, priceRange);
+    }
   };
 
   const toggleTag = (tag: string) => {
-    setCheckedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    const updated = checkedTags.includes(tag)
+      ? checkedTags.filter((t) => t !== tag)
+      : [...checkedTags, tag];
+    updateFilters(checkedCategories, updated, priceRange);
   };
 
+  const toggleAllTags = () => {
+    if (!isAllTagsSelected) {
+      updateFilters(checkedCategories, [], priceRange);
+    }
+  };
+
+  const handlePriceChange = (value: number) => {
+    updateFilters(checkedCategories, checkedTags, value);
+  };
 
   const sidebarVariants: Variants = {
     hidden: { opacity: 0, x: -30 },
@@ -73,6 +154,19 @@ const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
               <div className="mb-6">
                 <h4 className="text-sm font-bold mb-3 text-[#316312] dark:text-[#8cc655]">ক্যাটাগরি</h4>
                 <div className="space-y-2.5">
+                  <motion.label 
+                    variants={filterItemVariants}
+                    whileHover={{ x: 3 }}
+                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isAllCategoriesSelected}
+                      onChange={toggleAllCategories}
+                      className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
+                    />
+                    সকল
+                  </motion.label>
                   {categories.map((cat) => (
                     <motion.label 
                       key={cat} 
@@ -96,6 +190,19 @@ const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
               <div className="mb-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <h4 className="text-sm font-bold mb-3 text-[#316312] dark:text-[#8cc655]">ট্যাগ</h4>
                 <div className="space-y-2.5">
+                  <motion.label 
+                    variants={filterItemVariants}
+                    whileHover={{ x: 3 }}
+                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isAllTagsSelected}
+                      onChange={toggleAllTags}
+                      className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
+                    />
+                    সকল
+                  </motion.label>
                   {tags.map((tag) => (
                     <motion.label 
                       key={tag} 
@@ -122,13 +229,15 @@ const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
                   type="range"
                   min="0"
                   max="1000"
-                  value={priceRange}
-                  onChange={(e) => setPriceRange(Number(e.target.value))}
+                  value={localPrice}
+                  onChange={(e) => setLocalPrice(Number(e.target.value))}
+                  onMouseUp={() => handlePriceChange(localPrice)}
+                  onTouchEnd={() => handlePriceChange(localPrice)}
                   className="w-full accent-[#316312] dark:accent-[#8cc655] cursor-pointer"
                 />
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>৳০</span>
-                  <span>৳{priceRange}{priceRange === 1000 ? '+' : ''}</span>
+                  <span>৳{localPrice}{localPrice === 1000 ? '+' : ''}</span>
                 </div>
               </div>
             </aside>
@@ -147,6 +256,14 @@ const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
         </div>
       </main>
     </div>
+  );
+};
+
+const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
+  return (
+    <Suspense fallback={<div className="max-w-[90%] mx-auto mt-10 text-center py-20 text-gray-500 dark:text-gray-400">লোড হচ্ছে...</div>}>
+      <ExploreLayoutContent>{children}</ExploreLayoutContent>
+    </Suspense>
   );
 };
 

@@ -139,7 +139,7 @@ const Navbar = () => {
                         {session.user.name}
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {session.user.role === "Farmer" ? "কৃষক" : "ক্রেতা"}
+                        {session.user.role === "Admin" ? "অ্যাডমিন" : session.user.role === "Farmer" ? "কৃষক" : "ক্রেতা"}
                       </span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""} ${darkMode ? "text-gray-400" : "text-emerald-950/70"}`} />
@@ -158,7 +158,7 @@ const Navbar = () => {
                           <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{session.user.email}</p>
                           <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#316312]/10 dark:bg-[#8cc655]/10 text-[#316312] dark:text-[#8cc655]">
                             <Shield className="w-3 h-3" />
-                            {session.user.role === "Farmer" ? "কৃষক (Farmer)" : "ক্রেতা (Buyer)"}
+                            {session.user.role === "Admin" ? "অ্যাডমিন (Admin)" : session.user.role === "Farmer" ? "কৃষক (Farmer)" : "ক্রেতা (Buyer)"}
                           </span>
                         </div>
                         <Link href="/dashboard" onClick={() => setDropdownOpen(false)}
@@ -254,7 +254,7 @@ const Navbar = () => {
                     <span className="text-xs text-gray-400 truncate">{session.user.email}</span>
                     <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-[#316312] dark:text-[#8cc655]">
                       <Shield className="w-3 h-3" />
-                      {session.user.role === "Farmer" ? "কৃষক (Farmer)" : "ক্রেতা (Buyer)"}
+                      {session.user.role === "Admin" ? "অ্যাডমিন (Admin)" : session.user.role === "Farmer" ? "কৃষক (Farmer)" : "ক্রেতা (Buyer)"}
                     </span>
                   </div>
                 </div>
