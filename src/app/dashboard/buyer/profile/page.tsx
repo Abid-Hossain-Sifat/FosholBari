@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import * as Icons from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { getProfile, updateProfile, uploadToImageBB } from "@/lib/data";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -24,11 +25,12 @@ const BuyerProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [name, setName] = useState(session?.user?.name || "");
-  const [email, setEmail] = useState(session?.user?.email || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -37,22 +39,93 @@ const BuyerProfile = () => {
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const profileData = await getProfile();
+        setName(session?.user?.name || "");
+        setEmail(session?.user?.email || "");
+        setPhone(session?.user?.phoneNumber || profileData.phone || "");
+        setLocation(profileData.location || "");
+        if (profileData.image) {
+          setProfileImage(profileData.image);
+        }
+      } catch (err) {
+        console.error("Error loading buyer profile:", err);
+        setName(session?.user?.name || "");
+        setEmail(session?.user?.email || "");
+        setPhone(session?.user?.phoneNumber || "");
+      }
+    };
+
+    if (session?.user) {
+      fetchProfileData();
+    }
+  }, [session]);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setImageFile(file);
       setProfileImage(URL.createObjectURL(file));
     }
   };
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditing(false);
+    try {
+      let imageUrl = profileImage;
+      if (imageFile) {
+        const reader = new FileReader();
+        const uploadPromise = new Promise<string>((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const url = await uploadToImageBB(reader.result as string);
+              resolve(url);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = () => reject(new Error("Image read error"));
+          reader.readAsDataURL(imageFile);
+        });
+        imageUrl = await uploadPromise;
+      }
+
+      if (name && name !== session?.user?.name) {
+        await authClient.updateUser({
+          name: name,
+        });
+      }
+
+      if (email && email !== session?.user?.email) {
+        const res = await authClient.changeEmail({
+          newEmail: email,
+        });
+        if (res?.error) {
+          alert("ইমেইল পরিবর্তন করতে ব্যর্থ হয়েছে: " + res.error.message);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      await updateProfile({
+        phone,
+        location,
+        image: imageUrl,
+      });
+
       alert("আপনার প্রোফাইল সফলভাবে আপডেট করা হয়েছে!");
-    }, 1200);
+      setIsEditing(false);
+      setImageFile(null);
+    } catch (err) {
+      console.error(err);
+      alert("প্রোফাইল আপডেট করতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const closePasswordModal = () => {
@@ -63,7 +136,7 @@ const BuyerProfile = () => {
     setPasswordError("");
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError("");
 
@@ -79,11 +152,23 @@ const BuyerProfile = () => {
 
     setIsPasswordSaving(true);
 
-    setTimeout(() => {
+    try {
+      const res = await authClient.changePassword({
+        currentPassword: oldPassword,
+        newPassword: newPassword,
+        revokeOtherSessions: true,
+      });
+      if (res?.error) {
+        setPasswordError(res.error.message || "পাসওয়ার্ড পরিবর্তন করতে ব্যর্থ হয়েছে।");
+      } else {
+        closePasswordModal();
+        alert("আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!");
+      }
+    } catch (err: any) {
+      setPasswordError(err?.message || "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে।");
+    } finally {
       setIsPasswordSaving(false);
-      closePasswordModal();
-      alert("আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!");
-    }, 1200);
+    }
   };
 
   return (

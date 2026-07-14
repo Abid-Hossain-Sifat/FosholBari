@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { HarvestLoader } from "@/Components/loading";
 import {
   LayoutDashboard,
   FileText,
@@ -34,11 +35,21 @@ interface BuyerLayoutProps {
 }
 
 const BuyerLayout = ({ children }: BuyerLayoutProps) => {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
   const { theme } = useTheme();
   const mounted = useMounted();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    if (isPending) return;
+    if (!session?.user) {
+      router.push("/auth");
+    } else if (session.user.role !== "Buyer") {
+      router.push("/unauthorized");
+    }
+  }, [session, isPending, router]);
 
   const darkMode = mounted && theme === "dark";
 
@@ -47,6 +58,16 @@ const BuyerLayout = ({ children }: BuyerLayoutProps) => {
     setPrevPathname(pathname);
     setMobileMenuOpen(false);
   }
+
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut();
+      router.push("/auth");
+    } catch (err) {
+      console.error("Logout failed:", err);
+      window.location.href = "/auth";
+    }
+  };
 
   const menuItems = [
     { name: "ড্যাশবোর্ড", href: "/dashboard/buyer", icon: LayoutDashboard },
@@ -67,6 +88,18 @@ const BuyerLayout = ({ children }: BuyerLayoutProps) => {
     },
     { name: "প্রোফাইল", href: "/dashboard/buyer/profile", icon: User },
   ];
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17]">
+        <HarvestLoader variant="fallback" />
+      </div>
+    );
+  }
+
+  if (!session?.user || session.user.role !== "Buyer") {
+    return null;
+  }
 
   const sidebarContent = (
     <div className="flex flex-col justify-between h-full">
@@ -157,10 +190,7 @@ const BuyerLayout = ({ children }: BuyerLayoutProps) => {
             </div>
           </div>
           <button
-            onClick={async () => {
-              await authClient.signOut();
-              window.location.href = "/auth";
-            }}
+            onClick={handleLogout}
             className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
           >
             <LogOut className="w-4 h-4" />

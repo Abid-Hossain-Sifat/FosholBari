@@ -100,19 +100,6 @@ const AllOrdersPage = () => {
             আপনার কেনা সব ফসলের ইতিহাস ও বর্তমান ডেলিভারি স্ট্যাটাস
           </p>
         </div>
-
-        <div className="relative w-full sm:w-72">
-          <input
-            type="text"
-            placeholder="অর্ডার আইডি দিয়ে খুঁজুন..."
-            className={`w-full pl-10 pr-4 py-2 rounded-xl border text-xs outline-none transition-all ${
-              darkMode
-                ? "bg-[#16201c] border-[#2c3d36] text-white focus:border-[#9ece6a]"
-                : "bg-white border-gray-200 focus:border-[#008080]"
-            }`}
-          />
-          <Icons.Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-        </div>
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b dark:border-[#2c3d36] border-gray-200 scrollbar-none">
@@ -163,7 +150,6 @@ const AllOrdersPage = () => {
                 <th className="p-4">মোট মূল্য</th>
                 <th className="p-4">অর্ডারের তারিখ</th>
                 <th className="p-4 text-center">স্ট্যাটাস</th>
-                <th className="p-4 pr-6 text-center">অ্যাকশন</th>
               </tr>
             </thead>
             <tbody
@@ -194,17 +180,6 @@ const AllOrdersPage = () => {
                       >
                         {getStatusLabel(order.status)}
                       </span>
-                    </td>
-                    <td className="p-4 pr-6 text-center">
-                      <button
-                        className={`p-2 rounded-xl border transition-all text-xs font-bold inline-flex items-center gap-1 ${
-                          darkMode
-                            ? "bg-[#111a17] border-[#2c3d36] hover:bg-[#202f2a] text-gray-300"
-                            : "bg-white border-gray-200 hover:bg-stone-100 text-stone-700"
-                        }`}
-                      >
-                        <Icons.Eye className="w-3.5 h-3.5" /> ট্র্যাক করুন
-                      </button>
                     </td>
                   </tr>
                 ))
