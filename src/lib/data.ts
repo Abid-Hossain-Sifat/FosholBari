@@ -12,6 +12,7 @@ export interface ExploreFilters {
   maxPrice?: number;
   sort?: string;
   page?: number;
+  limit?: number;
   farmerId?: string;
 }
 
@@ -29,6 +30,7 @@ export const exploreCollection = async (filters?: ExploreFilters) => {
   if (filters?.sort) params.append("sort", filters.sort);
   if (filters?.page && filters.page > 1)
     params.append("page", filters.page.toString());
+  if (filters?.limit) params.append("limit", filters.limit.toString());
   if (filters?.farmerId) params.append("farmerId", filters.farmerId);
 
   const query = params.toString();
@@ -193,13 +195,32 @@ export const deleteBazarNote = async (id: string) => {
 // EXTENDED PROFILE
 // ══════════════════════════════════════════════════════════════════
 
+// All optional fields that either Farmer or Buyer may send to /profile PATCH
+export interface ProfileUpdatePayload {
+  // Common
+  phone?: string;
+  image?: string | null;
+  // Buyer-specific
+  location?: string;
+  // Farmer-specific
+  nid?: string;
+  farmName?: string;
+  farmLocation?: string;
+  bio?: string;
+  bkash?: string;
+  nagad?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+}
+
 export const getProfile = async () => {
   const res = await fetch(`${SERVER}/profile`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch profile");
   return res.json();
 };
 
-export const updateProfile = async (data: any) => {
+export const updateProfile = async (data: ProfileUpdatePayload) => {
   const res = await fetch(`${SERVER}/profile`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

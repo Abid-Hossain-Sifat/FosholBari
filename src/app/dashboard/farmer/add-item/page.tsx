@@ -200,7 +200,6 @@ const AddProductPage = () => {
         }
       >
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* পণ্যের নাম + ট্যাগ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>
@@ -231,7 +230,6 @@ const AddProductPage = () => {
             </div>
           </div>
 
-          {/* ক্যাটাগরি + একক */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>
@@ -270,7 +268,6 @@ const AddProductPage = () => {
             </div>
           </div>
 
-          {/* মূল্য + আসল মূল্য */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>
@@ -313,7 +310,6 @@ const AddProductPage = () => {
             </div>
           </div>
 
-          {/* ছবি আপলোড */}
           <div>
             <label className={labelCls}>
               <ImageIcon size={12} /> পণ্যের ছবি
@@ -364,7 +360,6 @@ const AddProductPage = () => {
             )}
           </div>
 
-          {/* বিবরণ */}
           <div>
             <label className={labelCls}>
               <FileText size={12} /> পণ্যের বিবরণ

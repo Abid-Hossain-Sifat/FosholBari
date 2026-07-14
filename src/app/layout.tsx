@@ -4,7 +4,7 @@ import Navbar from "../Components/Navbar";
 import { Hind_Siliguri, Manrope } from 'next/font/google'
 import { Providers } from "./providers";
 import { Suspense } from "react";
-import { LoadingProvider } from "@/Components/loading";
+import { LoadingProvider, HarvestLoader } from "@/Components/loading";
 
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans' })
 const hindSiliguri = Hind_Siliguri({
@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="bn" className="h-full antialiased" suppressHydrationWarning>
       <body className={`${hindSiliguri.variable} ${manrope.variable} ${hindSiliguri.className} min-h-full flex flex-col`}>
         <Providers>
-          <Suspense fallback={null}>
+          <Suspense fallback={<HarvestLoader variant="fallback" />}>
             <LoadingProvider>
               <Navbar />
               {children}
