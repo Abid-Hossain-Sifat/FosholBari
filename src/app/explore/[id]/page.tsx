@@ -1,10 +1,12 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronRight, Check, Heart } from 'lucide-react';
+import { ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronRight, Check, Heart, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { exploreProductById } from '../../../lib/data';
+import { toast } from 'react-toastify';
+import { exploreProductById, createOrder } from '../../../lib/data';
+import { authClient } from '@/lib/auth-client';
 
 interface Product {
   _id: string;
@@ -22,6 +24,8 @@ interface Product {
   weights?: string[];
   description?: string;
   bulletPoints?: string[];
+  farmerId?: string;
+  farmerName?: string;
 }
 
 const staticFeatures = [
@@ -70,7 +74,9 @@ const tabContentVariants: Variants = {
 
 const ExploreDetails = () => {
   const params = useParams();
+  const router = useRouter();
   const productId = params.id as string;
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +85,7 @@ const ExploreDetails = () => {
   const [activeTab, setActiveTab] = useState<'description' | 'nutrition'>('description');
   const [isFavorite, setIsFavorite] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -94,9 +101,41 @@ const ExploreDetails = () => {
     loadProduct();
   }, [productId]);
 
-  const handleBuyNow = () => {
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 1800);
+  const handleBuyNow = async () => {
+    if (sessionPending || buying) return;
+
+    if (!session?.user) {
+      toast.info("অর্ডার করতে আগে লগইন করুন।");
+      router.push("/auth");
+      return;
+    }
+
+    if (session.user.role !== "Buyer") {
+      toast.error("শুধুমাত্র ক্রেতা পণ্য কিনতে পারবেন।");
+      return;
+    }
+
+    if (!product) return;
+
+    setBuying(true);
+    try {
+      await createOrder({
+        productId: product._id,
+        qty: 1,
+        weight: selectedWeight || product.unit,
+      });
+      setJustAdded(true);
+      toast.success("অর্ডার সফলভাবে সম্পন্ন হয়েছে!");
+      setTimeout(() => {
+        setJustAdded(false);
+        router.push("/dashboard/buyer/all-orders");
+      }, 1200);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "অর্ডার করতে সমস্যা হয়েছে।";
+      toast.error(msg);
+    } finally {
+      setBuying(false);
+    }
   };
 
   if (loading) {
@@ -248,16 +287,31 @@ const ExploreDetails = () => {
               </div>
 
               {/* Actions */}
-              <div className="pt-4">
+              <div className="pt-4 space-y-2">
+                {!sessionPending && session?.user && session.user.role !== "Buyer" && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    শুধুমাত্র ক্রেতা অ্যাকাউন্ট দিয়ে পণ্য কেনা যায়।
+                  </p>
+                )}
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleBuyNow}
-                  disabled={justAdded}
-                  className="w-full flex items-center justify-center gap-2 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold py-3 px-6 rounded-xl shadow-md text-sm sm:text-base disabled:opacity-90"
+                  disabled={justAdded || buying || (!!session?.user && session.user.role !== "Buyer")}
+                  className="w-full flex items-center justify-center gap-2 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] font-bold py-3 px-6 rounded-xl shadow-md text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <AnimatePresence mode="wait" initial={false}>
-                    {justAdded ? (
+                    {buying ? (
+                      <motion.span
+                        key="buying"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Loader2 size={18} className="animate-spin" /> অর্ডার হচ্ছে...
+                      </motion.span>
+                    ) : justAdded ? (
                       <motion.span
                         key="added"
                         initial={{ opacity: 0, y: 6 }}

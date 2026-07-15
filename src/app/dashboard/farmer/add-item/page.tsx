@@ -243,7 +243,7 @@ const AddProductPage = () => {
               >
                 <option value="শাক-সবজি">শাক-সবজি</option>
                 <option value="ধান ও চাল">ধান ও চাল</option>
-                <option value="মরসুমী ফল">মরসুমী ফল</option>
+                <option value="মৌসুমি ফল">মৌসুমি ফল</option>
                 <option value="ডাল ও শস্য">ডাল ও শস্য</option>
                 <option value="খাঁটি মশলা">খাঁটি মশলা</option>
               </select>

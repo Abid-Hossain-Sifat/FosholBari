@@ -1,6 +1,9 @@
-const SERVER =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:11111";
-const EXPLORE_URL = `${SERVER}/explore`;
+const EXPLORE_URL = process.env.NEXT_PUBLIC_EXPLORE_URL || "http://localhost:11111/explore";
+const ORDERS_URL = process.env.NEXT_PUBLIC_ORDERS_URL || "http://localhost:11111/orders";
+const DEMANDS_URL = process.env.NEXT_PUBLIC_DEMANDS_URL || "http://localhost:11111/demands";
+const BAZAR_NOTES_URL = process.env.NEXT_PUBLIC_BAZAR_NOTES_URL || "http://localhost:11111/bazar-notes";
+const PROFILE_URL = process.env.NEXT_PUBLIC_PROFILE_URL || "http://localhost:11111/profile";
+const STATS_URL = process.env.NEXT_PUBLIC_STATS_URL || "http://localhost:11111/stats";
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -14,6 +17,7 @@ export interface ExploreFilters {
   page?: number;
   limit?: number;
   farmerId?: string;
+  search?: string;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -32,6 +36,7 @@ export const exploreCollection = async (filters?: ExploreFilters) => {
     params.append("page", filters.page.toString());
   if (filters?.limit) params.append("limit", filters.limit.toString());
   if (filters?.farmerId) params.append("farmerId", filters.farmerId);
+  if (filters?.search) params.append("search", filters.search);
 
   const query = params.toString();
   const url = query ? `${EXPLORE_URL}?${query}` : EXPLORE_URL;
@@ -88,45 +93,60 @@ export const deleteProduct = async (id: string) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getOrders = async (role: "buyer" | "farmer") => {
-  const res = await fetch(`${SERVER}/orders?role=${role}`, {
+  const res = await fetch(`${ORDERS_URL}?role=${role}`, {
     credentials: "include",
   });
   if (!res.ok) return [];
   return res.json();
 };
 
-export const createOrder = async (data: object) => {
-  const res = await fetch(`${SERVER}/orders`, {
+export const createOrder = async (data: {
+  productId: string;
+  qty?: number;
+  weight?: string;
+  address?: string;
+  phone?: string;
+}) => {
+  const res = await fetch(ORDERS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(data),
   });
-  return res.json();
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || "অর্ডার করতে ব্যর্থ হয়েছে।");
+  }
+  return json;
 };
 
 export const updateOrderStatus = async (id: string, status: string) => {
-  const res = await fetch(`${SERVER}/orders/${id}`, {
+  const res = await fetch(`${ORDERS_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ status }),
   });
-  return res.json();
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || "স্ট্যাটাস আপডেট করতে ব্যর্থ হয়েছে।");
+  }
+  return json;
 };
 
 // ══════════════════════════════════════════════════════════════════
 // DEMANDS
 // ══════════════════════════════════════════════════════════════════
 
-export const getDemands = async () => {
-  const res = await fetch(`${SERVER}/demands`, { credentials: "include" });
+export const getDemands = async (my?: boolean) => {
+  const url = my ? `${DEMANDS_URL}?my=true` : DEMANDS_URL;
+  const res = await fetch(url, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const createDemand = async (data: object) => {
-  const res = await fetch(`${SERVER}/demands`, {
+  const res = await fetch(DEMANDS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -135,8 +155,22 @@ export const createDemand = async (data: object) => {
   return res.json();
 };
 
+export const addDemandComment = async (id: string, text: string) => {
+  const res = await fetch(`${DEMANDS_URL}/${id}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ text }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || "মন্তব্য/প্রস্তাব যোগ করতে ব্যর্থ হয়েছে।");
+  }
+  return json;
+};
+
 export const updateDemand = async (id: string, data: object) => {
-  const res = await fetch(`${SERVER}/demands/${id}`, {
+  const res = await fetch(`${DEMANDS_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -146,7 +180,7 @@ export const updateDemand = async (id: string, data: object) => {
 };
 
 export const deleteDemand = async (id: string) => {
-  const res = await fetch(`${SERVER}/demands/${id}`, {
+  const res = await fetch(`${DEMANDS_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -158,13 +192,13 @@ export const deleteDemand = async (id: string) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getBazarNotes = async () => {
-  const res = await fetch(`${SERVER}/bazar-notes`, { credentials: "include" });
+  const res = await fetch(BAZAR_NOTES_URL, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const createBazarNote = async (data: object) => {
-  const res = await fetch(`${SERVER}/bazar-notes`, {
+  const res = await fetch(BAZAR_NOTES_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -174,7 +208,7 @@ export const createBazarNote = async (data: object) => {
 };
 
 export const updateBazarNote = async (id: string, data: object) => {
-  const res = await fetch(`${SERVER}/bazar-notes/${id}`, {
+  const res = await fetch(`${BAZAR_NOTES_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -184,7 +218,7 @@ export const updateBazarNote = async (id: string, data: object) => {
 };
 
 export const deleteBazarNote = async (id: string) => {
-  const res = await fetch(`${SERVER}/bazar-notes/${id}`, {
+  const res = await fetch(`${BAZAR_NOTES_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -215,13 +249,13 @@ export interface ProfileUpdatePayload {
 }
 
 export const getProfile = async () => {
-  const res = await fetch(`${SERVER}/profile`, { credentials: "include" });
+  const res = await fetch(PROFILE_URL, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch profile");
   return res.json();
 };
 
 export const updateProfile = async (data: ProfileUpdatePayload) => {
-  const res = await fetch(`${SERVER}/profile`, {
+  const res = await fetch(PROFILE_URL, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -236,13 +270,13 @@ export const updateProfile = async (data: ProfileUpdatePayload) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getFarmerStats = async () => {
-  const res = await fetch(`${SERVER}/stats/farmer`, { credentials: "include" });
+  const res = await fetch(`${STATS_URL}/farmer`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 };
 
 export const getBuyerStats = async () => {
-  const res = await fetch(`${SERVER}/stats/buyer`, { credentials: "include" });
+  const res = await fetch(`${STATS_URL}/buyer`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 };

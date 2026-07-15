@@ -50,8 +50,8 @@ const Navbar = () => {
   const navLinks = [
     { name: "হোম", href: "/" },
     { name: "এক্সপ্লোর", href: "/explore" },
-    { name: "আমাদের সম্পর্কে", href: "/about" },
-    { name: "যোগাযোগ", href: "/contact" },
+    { name: "ক্রেতার চাহিদা", href: "/demand" },
+    { name: "কৃষক সহায়তা", href: "/farmer-help" },
   ];
 
   return (

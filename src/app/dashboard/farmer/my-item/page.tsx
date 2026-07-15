@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { exploreCollection, updateProduct, deleteProduct } from "@/lib/data";
+import { toast } from "react-toastify";
 
 interface Product {
   _id: string;
@@ -30,7 +31,7 @@ function useMounted() {
 const categoryIconMap: Record<string, LucideIcon> = {
   "ধান ও চাল": Wheat,
   "শাক-সবজি": Carrot,
-  "মরসুমী ফল": Apple,
+  "মৌসুমি ফল": Apple,
   "খাঁটি মশলা": FlaskConical,
 };
 const getCategoryIcon = (cat: string): LucideIcon => categoryIconMap[cat] ?? Package;
@@ -52,6 +53,9 @@ const MyProductsPage = () => {
   const [editStock, setEditStock] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Deletion modal state
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // ── Fetch farmer's own products ───────────────────────────────────
   useEffect(() => {
@@ -86,15 +90,23 @@ const MyProductsPage = () => {
       p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ── Delete ────────────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিতভাবে এই পণ্যটি মুছে ফেলতে চান?")) return;
+  // ── Delete Handlers ───────────────────────────────────────────────
+  const handleDeleteClick = (id: string) => {
+    setDeleteTargetId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetId) return;
+    const targetId = deleteTargetId;
+    setDeleteTargetId(null);
+
     try {
-      await deleteProduct(id);
-      setProducts((prev) => prev.filter((p) => p._id !== id));
+      await deleteProduct(targetId);
+      setProducts((prev) => prev.filter((p) => p._id !== targetId));
+      toast.success("পণ্যটি সফলভাবে মুছে ফেলা হয়েছে।");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "মুছতে সমস্যা হয়েছে, আবার চেষ্টা করুন।";
-      alert(msg);
+      toast.error(msg);
     }
   };
 
@@ -126,8 +138,9 @@ const MyProductsPage = () => {
         )
       );
       setEditingProduct(null);
+      toast.success("পণ্যটির স্টক ও মূল্য সফলভাবে আপডেট করা হয়েছে।");
     } catch {
-      alert("আপডেট করতে সমস্যা হয়েছে।");
+      toast.error("আপডেট করতে সমস্যা হয়েছে।");
     } finally {
       setSaving(false);
     }
@@ -307,7 +320,7 @@ const MyProductsPage = () => {
                       <Edit3 size={13} /> দ্রুত আপডেট
                     </button>
                     <button
-                      onClick={() => handleDelete(product._id)}
+                      onClick={() => handleDeleteClick(product._id)}
                       className="p-2 rounded-xl border border-red-200 hover:border-red-300 dark:border-red-950/40 dark:hover:border-red-900/60 bg-red-50 hover:bg-red-100/50 dark:bg-red-950/10 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 cursor-pointer transition-colors"
                     >
                       <Trash2 size={14} />
@@ -378,7 +391,7 @@ const MyProductsPage = () => {
                 >
                   <option value="শাক-সবজি">শাক-সবজি</option>
                   <option value="ধান ও চাল">ধান ও চাল</option>
-                  <option value="মরসুমী ফল">মরসুমী ফল</option>
+                  <option value="মৌসুমি ফল">মৌসুমি ফল</option>
                   <option value="ডাল ও শস্য">ডাল ও শস্য</option>
                   <option value="খাঁটি মশলা">খাঁটি মশলা</option>
                 </select>
@@ -395,7 +408,7 @@ const MyProductsPage = () => {
                 >
                   <option value="প্রতি কেজি">প্রতি কেজি</option>
                   <option value="প্রতি মন">প্রতি মন</option>
-                  <option value="প্রতি গ্রাম">প্রতি গ্রাম</option>
+                  <option value="প্রতি gram">প্রতি গ্রাম</option>
                   <option value="প্রতি পিস">প্রতি পিস</option>
                   <option value="প্রতি লিটার">প্রতি লিটার</option>
                   <option value="প্রতি আঁটি">প্রতি আঁটি</option>
@@ -460,6 +473,59 @@ const MyProductsPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div
+            className={`w-full max-w-sm rounded-2xl border p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150 ${
+              darkMode
+                ? "bg-[#16201c] border-[#26332d] text-gray-200"
+                : "bg-white border-gray-200 text-gray-800"
+            }`}
+          >
+            <div className="flex justify-between items-center border-b border-inherit pb-2">
+              <h3 className="font-bold text-sm flex items-center gap-1.5 text-red-600">
+                <AlertTriangle size={15} />
+                পণ্য মুছে ফেলুন
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-400"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <p className="text-sm leading-relaxed">
+              আপনি কি নিশ্চিতভাবে এই পণ্যটি মুছে ফেলতে চান? এই কাজটি আর পূর্বাবস্থায় ফেরানো যাবে না।
+            </p>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-colors ${
+                  darkMode
+                    ? "border-[#26332d] hover:bg-[#1B2420] text-gray-400"
+                    : "border-gray-200 hover:bg-gray-50 text-gray-500"
+                }`}
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1"
+              >
+                <Trash2 size={13} />
+                মুছে ফেলুন
+              </button>
+            </div>
           </div>
         </div>
       )}

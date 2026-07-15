@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import * as Icons from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { getOrders } from "@/lib/data";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -13,67 +15,83 @@ function useMounted() {
   );
 }
 
+type OrderStatus = "Pending" | "Shipped" | "Delivered" | "Cancelled";
+
+interface BuyerOrder {
+  id: string;
+  crop: string;
+  qty: string;
+  total: string;
+  date: string;
+  status: OrderStatus;
+  farmerName: string;
+}
+
+const mapOrder = (o: any): BuyerOrder => ({
+  id: o._id || String(o.id || ""),
+  crop: o.productName || "অজ্ঞাত পণ্য",
+  qty: o.weight
+    ? String(o.weight)
+    : typeof o.qty === "number"
+      ? `${o.qty} ${o.unit || "কেজি"}`
+      : String(o.qty || "0"),
+  total: `৳ ${typeof o.total === "number" ? o.total.toLocaleString("bn-BD") : String(o.total || "0")}`,
+  date: o.createdAt
+    ? new Date(o.createdAt).toLocaleDateString("bn-BD", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "N/A",
+  status: (o.status as OrderStatus) || "Pending",
+  farmerName: o.farmerName || "",
+});
+
 const AllOrdersPage = () => {
   const { theme } = useTheme();
   const mounted = useMounted();
   const darkMode = mounted && theme === "dark";
+  const { data: session } = authClient.useSession();
 
   const [activeTab, setActiveTab] = useState("All");
+  const [orders, setOrders] = useState<BuyerOrder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allOrders = [
-    {
-      id: "#FB-8271",
-      crop: "বোরো ধান",
-      qty: "৫০০ কেজি",
-      total: "৳ ২৫,০০০",
-      date: "১২ মে, ২০২৬",
-      status: "Delivered",
-    },
-    {
-      id: "#FB-8285",
-      crop: "কাঁচা মরিচ",
-      qty: "৪০ কেজি",
-      total: "৳ ৪,৮০০",
-      date: "১৪ মে, ২০২৬",
-      status: "Processing",
-    },
-    {
-      id: "#FB-8292",
-      crop: "আলু (ডায়মন্ড)",
-      qty: "২০০ কেজি",
-      total: "৳ ৬,০০০",
-      date: "১৫ মে, ২০২৬",
-      status: "Pending",
-    },
-    {
-      id: "#FB-8310",
-      crop: "দেশী পেঁয়াজ",
-      qty: "১০০ কেজি",
-      total: "৳ ৭,৫০০",
-      date: "১৬ মে, ২০২৬",
-      status: "Processing",
-    },
-    {
-      id: "#FB-8102",
-      crop: "হিমসাগর আম",
-      qty: "৮০ কেজি",
-      total: "৳ ৮,০০০",
-      date: "০৫ মে, ২০২৬",
-      status: "Delivered",
-    },
-  ];
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const data = await getOrders("buyer");
+      setOrders(Array.isArray(data) ? data.map(mapOrder) : []);
+    } catch (err) {
+      console.error(err);
+      if (!silent) setOrders([]);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    loadOrders();
+
+    // Poll so farmer status changes show up here without refresh
+    const interval = setInterval(() => loadOrders(true), 5000);
+    return () => clearInterval(interval);
+  }, [session?.user?.id, loadOrders]);
 
   const filteredOrders =
     activeTab === "All"
-      ? allOrders
-      : allOrders.filter((order) => order.status === activeTab);
+      ? orders
+      : orders.filter((order) => order.status === activeTab);
 
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "Delivered":
         return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "Processing":
+      case "Shipped":
         return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "Cancelled":
+        return "bg-red-500/10 text-red-500 border-red-500/20";
       case "Pending":
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
       default:
@@ -83,9 +101,12 @@ const AllOrdersPage = () => {
 
   const getStatusLabel = (status: string) => {
     if (status === "Delivered") return "ডেলিভার্ড";
-    if (status === "Processing") return "প্রসেসিং";
+    if (status === "Shipped") return "শিপড";
+    if (status === "Cancelled") return "বাতিল";
     return "পেন্ডিং";
   };
+
+  const shortId = (id: string) => `#FB-${id.slice(-6).toUpperCase()}`;
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto px-3 sm:px-0">
@@ -106,7 +127,7 @@ const AllOrdersPage = () => {
         {[
           { key: "All", label: "সব অর্ডার" },
           { key: "Pending", label: "পেন্ডিং" },
-          { key: "Processing", label: "চলমান" },
+          { key: "Shipped", label: "শিপড" },
           { key: "Delivered", label: "ডেলিভার্ড" },
         ].map((tab) => (
           <button
@@ -134,68 +155,120 @@ const AllOrdersPage = () => {
             : "bg-white border-gray-200"
         }`}
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr
-                className={`text-xs font-bold border-b ${
-                  darkMode
-                    ? "bg-[#111a17] text-gray-400 border-[#2c3d36]"
-                    : "bg-stone-50 text-stone-500 border-gray-200"
-                }`}
-              >
-                <th className="p-4 pl-6">অর্ডার আইডি</th>
-                <th className="p-4">ফসলের নাম</th>
-                <th className="p-4">পরিমাণ</th>
-                <th className="p-4">মোট মূল্য</th>
-                <th className="p-4">অর্ডারের তারিখ</th>
-                <th className="p-4 text-center">স্ট্যাটাস</th>
-              </tr>
-            </thead>
-            <tbody
-              className={`divide-y text-xs sm:text-sm ${darkMode ? "divide-[#2c3d36] text-gray-300" : "divide-gray-100 text-stone-700"}`}
-            >
+        {loading ? (
+          <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+            <Icons.Loader2 className="w-6 h-6 animate-spin text-[#316312] dark:text-[#9ece6a]" />
+            <span className="text-sm font-medium">অর্ডার লোড হচ্ছে...</span>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr
+                    className={`text-xs font-bold border-b ${
+                      darkMode
+                        ? "bg-[#111a17] text-gray-400 border-[#2c3d36]"
+                        : "bg-stone-50 text-stone-500 border-gray-200"
+                    }`}
+                  >
+                    <th className="p-4 pl-6">অর্ডার আইডি</th>
+                    <th className="p-4">ফসলের নাম</th>
+                    <th className="p-4">পরিমাণ</th>
+                    <th className="p-4">মোট মূল্য</th>
+                    <th className="p-4">অর্ডারের তারিখ</th>
+                    <th className="p-4 text-center">স্ট্যাটাস</th>
+                  </tr>
+                </thead>
+                <tbody
+                  className={`divide-y text-xs sm:text-sm ${darkMode ? "divide-[#2c3d36] text-gray-300" : "divide-gray-100 text-stone-700"}`}
+                >
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className={`transition-colors ${darkMode ? "hover:bg-[#1B2420]/40" : "hover:bg-stone-50/50"}`}
+                      >
+                        <td
+                          className={`p-4 pl-6 font-bold ${darkMode ? "text-white" : "text-stone-900"}`}
+                        >
+                          {shortId(order.id)}
+                        </td>
+                        <td className="p-4 font-semibold">
+                          <span className="block">{order.crop}</span>
+                          {order.farmerName && (
+                            <span className="text-[10px] text-gray-400 font-normal">
+                              কৃষক: {order.farmerName}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4">{order.qty}</td>
+                        <td
+                          className={`p-4 font-bold ${darkMode ? "text-gray-200" : "text-emerald-950"}`}
+                        >
+                          {order.total}
+                        </td>
+                        <td className="p-4 text-gray-400">{order.date}</td>
+                        <td className="p-4 text-center">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusStyles(order.status)}`}
+                          >
+                            {getStatusLabel(order.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-12 text-gray-400 font-semibold"
+                      >
+                        এই ক্যাটাগরিতে কোনো অর্ডার পাওয়া যায়নি!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-[#2c3d36]">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => (
-                  <tr
+                  <div
                     key={order.id}
-                    className={`transition-colors ${darkMode ? "hover:bg-[#1B2420]/40" : "hover:bg-stone-50/50"}`}
+                    className={`p-4 space-y-2 ${darkMode ? "hover:bg-[#1B2420]/40" : "hover:bg-stone-50/50"}`}
                   >
-                    <td
-                      className={`p-4 pl-6 font-bold ${darkMode ? "text-white" : "text-stone-900"}`}
-                    >
-                      {order.id}
-                    </td>
-                    <td className="p-4 font-semibold">{order.crop}</td>
-                    <td className="p-4">{order.qty}</td>
-                    <td
-                      className={`p-4 font-bold ${darkMode ? "text-gray-200" : "text-emerald-950"}`}
-                    >
-                      {order.total}
-                    </td>
-                    <td className="p-4 text-gray-400">{order.date}</td>
-                    <td className="p-4 text-center">
+                    <div className="flex items-center justify-between gap-3">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusStyles(order.status)}`}
+                        className={`text-sm font-bold ${darkMode ? "text-white" : "text-stone-900"}`}
+                      >
+                        {shortId(order.id)}
+                      </span>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 ${getStatusStyles(order.status)}`}
                       >
                         {getStatusLabel(order.status)}
                       </span>
-                    </td>
-                  </tr>
+                    </div>
+                    <p className="text-sm font-semibold">{order.crop}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{order.qty}</span>
+                      <span className="font-bold text-emerald-800 dark:text-[#9ece6a]">
+                        {order.total}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400">{order.date}</p>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="text-center py-12 text-gray-400 font-semibold"
-                  >
-                    এই ক্যাটাগরিতে কোনো অর্ডার পাওয়া যায়নি!
-                  </td>
-                </tr>
+                <div className="text-center py-12 text-gray-400 font-semibold text-sm">
+                  এই ক্যাটাগরিতে কোনো অর্ডার পাওয়া যায়নি!
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

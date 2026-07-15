@@ -11,6 +11,8 @@ function useMounted() {
   return useSyncExternalStore(emptySubscribe, () => true, () => false);
 }
 
+import { toast } from "react-toastify";
+
 type OrderStatus = "Pending" | "Shipped" | "Delivered";
 
 interface Order {
@@ -32,7 +34,12 @@ const mapBackendOrder = (o: any): Order => {
     phone: o.phone || "N/A",
     address: o.address || "N/A",
     product: o.productName || "অজ্ঞাত পণ্য",
-    qty: typeof o.qty === "number" ? `${o.qty} কেজি` : String(o.qty || "0"),
+    qty:
+      o.weight
+        ? String(o.weight)
+        : typeof o.qty === "number"
+          ? `${o.qty} ${o.unit || "কেজি"}`
+          : String(o.qty || "0"),
     total: `৳${typeof o.total === "number" ? o.total.toLocaleString("bn-BD") : String(o.total || "0")}`,
     date: o.createdAt
       ? new Date(o.createdAt).toLocaleDateString("bn-BD", {
@@ -120,8 +127,8 @@ const OrderTrackingPage: React.FC = () => {
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    const load = async () => {
-      setLoading(true);
+    const load = async (silent = false) => {
+      if (!silent) setLoading(true);
       try {
         const data = await getOrders("farmer");
         if (Array.isArray(data)) {
@@ -131,12 +138,14 @@ const OrderTrackingPage: React.FC = () => {
         }
       } catch (err) {
         console.error(err);
-        setOrders([]);
+        if (!silent) setOrders([]);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     };
     load();
+    const interval = setInterval(() => load(true), 5000);
+    return () => clearInterval(interval);
   }, [session?.user?.id]);
 
   const filteredOrders =
@@ -164,7 +173,7 @@ const OrderTrackingPage: React.FC = () => {
       );
     } catch (err) {
       console.error(err);
-      alert("অর্ডার স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।");
+      toast.error("অর্ডার স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।");
     }
   };
 

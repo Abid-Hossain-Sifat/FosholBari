@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import * as Icons from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getProfile, updateProfile, uploadToImageBB } from "@/lib/data";
+import { toast } from "react-toastify";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -105,7 +106,7 @@ const BuyerProfile = () => {
           newEmail: email,
         });
         if (res?.error) {
-          alert("ইমেইল পরিবর্তন করতে ব্যর্থ হয়েছে: " + res.error.message);
+          toast.error("ইমেইল পরিবর্তন করতে ব্যর্থ হয়েছে: " + res.error.message);
           setIsSaving(false);
           return;
         }
@@ -117,12 +118,12 @@ const BuyerProfile = () => {
         image: imageUrl,
       });
 
-      alert("আপনার প্রোফাইল সফলভাবে আপডেট করা হয়েছে!");
+      toast.success("আপনার প্রোফাইল সফলভাবে আপডেট করা হয়েছে!");
       setIsEditing(false);
       setImageFile(null);
     } catch (err) {
       console.error(err);
-      alert("প্রোফাইল আপডেট করতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
+      toast.error("প্রোফাইল আপডেট করতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
     } finally {
       setIsSaving(false);
     }
@@ -162,7 +163,7 @@ const BuyerProfile = () => {
         setPasswordError(res.error.message || "পাসওয়ার্ড পরিবর্তন করতে ব্যর্থ হয়েছে।");
       } else {
         closePasswordModal();
-        alert("আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!");
+        toast.success("আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!");
       }
     } catch (err: any) {
       setPasswordError(err?.message || "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে।");

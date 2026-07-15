@@ -5,6 +5,7 @@ import { Hind_Siliguri, Manrope } from 'next/font/google'
 import { Providers } from "./providers";
 import { Suspense } from "react";
 import { LoadingProvider, HarvestLoader } from "@/Components/loading";
+import Footer from "@/Components/Footer";
 
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans' })
 const hindSiliguri = Hind_Siliguri({
@@ -31,6 +32,7 @@ export default function RootLayout({
             <LoadingProvider>
               <Navbar />
               {children}
+              <Footer></Footer>
             </LoadingProvider>
           </Suspense>
         </Providers>

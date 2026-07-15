@@ -12,6 +12,8 @@ import {
   AlertCircle 
 } from "lucide-react";
 
+import { authClient } from "@/lib/auth-client";
+
 interface Order {
   id: string;
   buyer: string;
@@ -39,12 +41,15 @@ const FarmerPage: React.FC = () => {
   const mounted = useMounted();
   const darkMode = mounted && theme === "dark";
 
+  const { data: session } = authClient.useSession();
+  const farmerName = session?.user?.name || "কৃষক";
+
   return (
     <div className="space-y-6">
       {/* Header Greeting */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          স্বাগতম, আবিদ হোসেন সিফাত! 👋
+          স্বাগতম, {farmerName}!
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           আজকে আপনার খামারের পণ্য এবং অর্ডারের সংক্ষিপ্ত বিবরণ।
@@ -200,7 +205,7 @@ const FarmerPage: React.FC = () => {
 
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>মরসুমী ফল</span>
+                  <span>মৌসুমি ফল</span>
                   <span>২০%</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">

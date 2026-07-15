@@ -1,3 +1,5 @@
+import { HarvestLoader } from "@/Components/loading";
+
 export default function BuyerDashboardLoading() {
-  return null;
+  return <HarvestLoader variant="fallback" />;
 }
