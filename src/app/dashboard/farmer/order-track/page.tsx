@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import * as Icons from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getOrders, updateOrderStatus } from "@/lib/data";
+import { HarvestLoader } from "@/Components/loading";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -231,9 +232,8 @@ const OrderTrackingPage: React.FC = () => {
       {/* Order List */}
       <div className="space-y-3 sm:space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
-            <Icons.Loader2 className="w-6 h-6 animate-spin text-[#316312] dark:text-[#9ece6a]" />
-            <span className="text-sm font-medium">অর্ডার লোড হচ্ছে...</span>
+          <div className="flex items-center justify-center min-h-[300px]">
+            <HarvestLoader variant="fallback" className="min-h-[300px]" />
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className={`${cardClasses} p-8 text-center text-sm text-gray-400`}>

@@ -259,9 +259,11 @@ const ExploreLayoutContent: React.FC<ExploreLayoutProps> = ({ children }) => {
   );
 };
 
+import { HarvestLoader } from "@/Components/loading";
+
 const ExploreLayout: React.FC<ExploreLayoutProps> = ({ children }) => {
   return (
-    <Suspense fallback={<div className="max-w-[90%] mx-auto mt-10 text-center py-20 text-gray-500 dark:text-gray-400">লোড হচ্ছে...</div>}>
+    <Suspense fallback={<HarvestLoader variant="fallback" className="min-h-[400px]" />}>
       <ExploreLayoutContent>{children}</ExploreLayoutContent>
     </Suspense>
   );

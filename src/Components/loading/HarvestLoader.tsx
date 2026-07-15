@@ -48,7 +48,11 @@ export function HarvestLoader({ onReady, className, variant = "initial" }: Harve
       <div
         role="status"
         aria-label="Loading FosholBari"
-        className={`relative flex min-h-screen w-full items-center justify-center overflow-hidden ${className ?? ""}`}
+        className={`relative flex w-full items-center justify-center overflow-hidden ${
+          className?.includes("min-h-") || className?.includes("h-")
+            ? ""
+            : "min-h-screen"
+        } ${className ?? ""}`}
       >
         <div className="relative z-10 flex flex-col items-center">
           <div className="relative h-44 w-72">

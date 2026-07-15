@@ -1,3 +1,5 @@
+See `../../AGENTS.md` for full repo guidance.
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 

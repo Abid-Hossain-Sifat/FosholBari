@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useSyncExternalStore } from "r
 import { useTheme } from "next-themes";
 import * as Icons from "lucide-react";
 import { toast } from "react-toastify";
+import { HarvestLoader } from "@/Components/loading";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -323,9 +324,8 @@ const DemandPage = () => {
 
           <div className="space-y-4">
             {loading ? (
-              <div className="flex items-center justify-center py-12 gap-3 text-gray-400">
-                <Icons.Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">লোড হচ্ছে...</span>
+              <div className="flex items-center justify-center min-h-[300px]">
+                <HarvestLoader variant="fallback" className="min-h-[300px]" />
               </div>
             ) : demands.length === 0 ? (
               <div className="text-center py-12 text-gray-400 text-sm font-medium">

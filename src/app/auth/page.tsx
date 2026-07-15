@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Truck, Leaf, Phone, UploadCloud } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "react-toastify";
+import { HarvestLoader } from "@/Components/loading";
 
 const loginD = "/Assets/loginD.jpg";
 const loginN = "/Assets/loginN.jpg";
@@ -212,14 +213,7 @@ const AuthPage = () => {
 
   // Prevent UI flashing while checking session or if redirecting
   if (isPending || session) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] transition-colors duration-300">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#316312] dark:border-[#8cc655] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">অপেক্ষা করুন...</p>
-        </div>
-      </div>
-    );
+    return <HarvestLoader variant="fallback" className="min-h-screen" />;
   }
 
   return (

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { exploreProductById, createOrder } from '../../../lib/data';
 import { authClient } from '@/lib/auth-client';
+import { HarvestLoader } from "@/Components/loading";
 
 interface Product {
   _id: string;
@@ -140,8 +141,8 @@ const ExploreDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17] text-gray-500 dark:text-gray-400">
-        লোড হচ্ছে...
+      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17]">
+        <HarvestLoader variant="fallback" />
       </div>
     );
   }

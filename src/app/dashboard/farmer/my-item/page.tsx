@@ -11,6 +11,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { exploreCollection, updateProduct, deleteProduct } from "@/lib/data";
 import { toast } from "react-toastify";
+import { HarvestLoader } from "@/Components/loading";
 
 interface Product {
   _id: string;
@@ -194,9 +195,8 @@ const MyProductsPage = () => {
 
       {/* Loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="text-sm font-medium">পণ্য লোড হচ্ছে...</span>
+        <div className="flex items-center justify-center min-h-[300px]">
+          <HarvestLoader variant="fallback" className="min-h-[300px]" />
         </div>
       ) : (
         /* Products Grid */

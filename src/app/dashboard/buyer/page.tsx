@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { ShoppingBag, Truck, CreditCard, ArrowRight, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getOrders } from "@/lib/data";
+import { HarvestLoader } from "@/Components/loading";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -205,9 +206,8 @@ const BuyerPage = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12 gap-3 text-gray-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">লোড হচ্ছে...</span>
+          <div className="flex items-center justify-center min-h-[300px]">
+            <HarvestLoader variant="fallback" className="min-h-[300px]" />
           </div>
         ) : recentOrders.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm font-medium">

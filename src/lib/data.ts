@@ -1,9 +1,11 @@
-const EXPLORE_URL = process.env.NEXT_PUBLIC_EXPLORE_URL || "http://localhost:11111/explore";
-const ORDERS_URL = process.env.NEXT_PUBLIC_ORDERS_URL || "http://localhost:11111/orders";
-const DEMANDS_URL = process.env.NEXT_PUBLIC_DEMANDS_URL || "http://localhost:11111/demands";
-const BAZAR_NOTES_URL = process.env.NEXT_PUBLIC_BAZAR_NOTES_URL || "http://localhost:11111/bazar-notes";
-const PROFILE_URL = process.env.NEXT_PUBLIC_PROFILE_URL || "http://localhost:11111/profile";
-const STATS_URL = process.env.NEXT_PUBLIC_STATS_URL || "http://localhost:11111/stats";
+const BASE = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:11111";
+const EXPLORE_URL = process.env.NEXT_PUBLIC_EXPLORE_URL || `${BASE}/explore`;
+const ORDERS_URL = process.env.NEXT_PUBLIC_ORDERS_URL || `${BASE}/orders`;
+const DEMANDS_URL = process.env.NEXT_PUBLIC_DEMANDS_URL || `${BASE}/demands`;
+const BAZAR_NOTES_URL = process.env.NEXT_PUBLIC_BAZAR_NOTES_URL || `${BASE}/bazar-notes`;
+const PROFILE_URL = process.env.NEXT_PUBLIC_PROFILE_URL || `${BASE}/profile`;
+const STATS_URL = process.env.NEXT_PUBLIC_STATS_URL || `${BASE}/stats`;
+const ADMIN_URL = `${BASE}/admin`;
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -278,6 +280,88 @@ export const getFarmerStats = async () => {
 export const getBuyerStats = async () => {
   const res = await fetch(`${STATS_URL}/buyer`, { credentials: "include" });
   if (!res.ok) return null;
+  return res.json();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════════════════════════
+
+export const getAdminStats = async () => {
+  const res = await fetch(`${STATS_URL}/admin`, { credentials: "include" });
+  if (!res.ok) return null;
+  return res.json();
+};
+
+export const getAdminUsers = async () => {
+  const res = await fetch(`${ADMIN_URL}/users`, { credentials: "include" });
+  if (!res.ok) return [];
+  return res.json();
+};
+
+export const updateUserRole = async (id: string, role: string) => {
+  const res = await fetch(`${ADMIN_URL}/users/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ role }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || "ব্যবহারকারী আপডেট করতে ব্যর্থ হয়েছে।");
+  return json;
+};
+
+export const deleteUser = async (id: string) => {
+  const res = await fetch(`${ADMIN_URL}/users/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("ব্যবহারকারী মুছতে ব্যর্থ হয়েছে।");
+  return res.json();
+};
+
+export const getAdminOrders = async () => {
+  const res = await fetch(`${ADMIN_URL}/orders`, { credentials: "include" });
+  if (!res.ok) return [];
+  return res.json();
+};
+
+export const updateAnyOrderStatus = async (id: string, status: string) => {
+  const res = await fetch(`${ADMIN_URL}/orders/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ status }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || "অর্ডার আপডেট করতে ব্যর্থ হয়েছে।");
+  return json;
+};
+
+export const deleteAnyOrder = async (id: string) => {
+  const res = await fetch(`${ADMIN_URL}/orders/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("অর্ডার মুছতে ব্যর্থ হয়েছে।");
+  return res.json();
+};
+
+export const deleteAnyProduct = async (id: string) => {
+  const res = await fetch(`${ADMIN_URL}/explore/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("পণ্য মুছতে ব্যর্থ হয়েছে।");
+  return res.json();
+};
+
+export const deleteAnyDemand = async (id: string) => {
+  const res = await fetch(`${ADMIN_URL}/demands/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("চাহিদা মুছতে ব্যর্থ হয়েছে।");
   return res.json();
 };
 

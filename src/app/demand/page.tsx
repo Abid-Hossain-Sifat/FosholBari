@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "react-toastify";
+import { HarvestLoader } from "@/Components/loading";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -227,14 +228,13 @@ const DemandPage = () => {
         </motion.div>
 
         {/* Demand list */}
-        <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400 min-h-[400px]">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-              <span className="text-sm font-medium">চাহিদা লোড হচ্ছে...</span>
+            <div className="col-span-full flex items-center justify-center min-h-[400px]">
+              <HarvestLoader variant="fallback" className="min-h-[400px]" />
             </div>
           ) : demands.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-32 min-h-[400px] rounded-2xl border border-dashed border-gray-300 dark:border-emerald-800/40 text-gray-400 text-base font-medium">
+            <div className="col-span-full flex flex-col items-center justify-center text-center py-32 min-h-[400px] rounded-2xl border border-dashed border-gray-300 dark:border-emerald-800/40 text-gray-400 text-base font-medium">
               এখনো কোনো চাহিদা পোস্ট করা হয়নি।
             </div>
           ) : (
@@ -251,101 +251,103 @@ const DemandPage = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
-                  className={`rounded-2xl border p-5 sm:p-6 transition-all duration-300 shadow-sm hover:shadow-md ${
+                  className={`rounded-2xl border p-5 sm:p-6 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col h-full justify-between ${
                     darkMode
                       ? "bg-[#16201c] border-[#26332d] hover:border-[#9ece6a]/30"
                       : "bg-white border-gray-200 hover:border-emerald-200"
                   }`}
                 >
-                  {/* Card Header: Buyer info & Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-base flex-shrink-0 shadow-sm">
-                        {buyerInitial}
-                      </div>
-                      <div className="flex flex-col">
-                        <span
-                          className={`text-sm sm:text-base font-bold ${
-                            darkMode ? "text-gray-100" : "text-emerald-950"
-                          }`}
-                        >
-                          {buyerName}
-                        </span>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            {demand.location || "অজ্ঞাত স্থান"}
+                  <div className="flex-grow flex flex-col gap-5">
+                    {/* Card Header: Buyer info & Status */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-base flex-shrink-0 shadow-sm">
+                          {buyerInitial}
+                        </div>
+                        <div className="flex flex-col">
+                          <span
+                            className={`text-sm sm:text-base font-bold ${
+                              darkMode ? "text-gray-100" : "text-emerald-950"
+                            }`}
+                          >
+                            {buyerName}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                            {formatPostedAt(demand.createdAt)}
-                          </span>
+                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              {demand.location || "অজ্ঞাত স্থান"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                              {formatPostedAt(demand.createdAt)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full self-start sm:self-center border ${
-                        demand.status === "Active"
-                          ? "bg-green-500/10 text-green-500 border-green-500/20"
-                          : "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                      }`}
-                    >
-                      {demand.status === "Active" ? "চলতি চাহিদা" : "সম্পন্ন চাহিদা"}
-                    </span>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="mt-5 space-y-4">
-                    <div>
-                      <h3
-                        className={`text-lg font-bold ${
-                          darkMode ? "text-white" : "text-emerald-950"
+                      <span
+                        className={`text-xs font-bold px-3 py-1 rounded-full self-start sm:self-center border ${
+                          demand.status === "Active"
+                            ? "bg-green-500/10 text-green-500 border-green-500/20"
+                            : "bg-blue-500/10 text-blue-500 border-blue-500/20"
                         }`}
                       >
-                        {demand.productName || demand.crop}
-                      </h3>
-                      {demand.description && (
-                        <p
-                          className={`text-sm leading-relaxed mt-1.5 ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          {demand.description}
-                        </p>
-                      )}
+                        {demand.status === "Active" ? "চলতি চাহিদা" : "সম্পন্ন চাহিদা"}
+                      </span>
                     </div>
 
-                    {/* Key details grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                        darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
-                      }`}>
-                        <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                          <Package className="w-3 h-3 text-emerald-600" /> পরিমাণ
-                        </span>
-                        <span className={`text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
-                          {demand.quantity || demand.qty}
-                        </span>
+                    {/* Card Body */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3
+                          className={`text-lg font-bold ${
+                            darkMode ? "text-white" : "text-emerald-950"
+                          }`}
+                        >
+                          {demand.productName || demand.crop}
+                        </h3>
+                        {demand.description && (
+                          <p
+                            className={`text-sm leading-relaxed mt-1.5 ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            {demand.description}
+                          </p>
+                        )}
                       </div>
-                      <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                        darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
-                      }`}>
-                        <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                          <DollarSign className="w-3 h-3 text-emerald-600" /> বাজেট
-                        </span>
-                        <span className={`text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
-                          {formatBudget(demand.budget)}
-                        </span>
-                      </div>
-                      <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                        darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
-                      }`}>
-                        <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                          <Calendar className="w-3 h-3 text-emerald-600" /> সময়সীমা
-                        </span>
-                        <span className={`text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
-                          {formatDate(demand.deadline)}
-                        </span>
+
+                      {/* Key details grid */}
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                        }`}>
+                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
+                            <Package className="w-3 h-3 text-emerald-600" /> পরিমাণ
+                          </span>
+                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                            {demand.quantity || demand.qty}
+                          </span>
+                        </div>
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                        }`}>
+                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
+                            <DollarSign className="w-3 h-3 text-emerald-600" /> বাজেট
+                          </span>
+                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                            {formatBudget(demand.budget)}
+                          </span>
+                        </div>
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                        }`}>
+                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
+                            <Calendar className="w-3 h-3 text-emerald-600" /> সময়সীমা
+                          </span>
+                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                            {formatDate(demand.deadline)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
