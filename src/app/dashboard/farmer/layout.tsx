@@ -112,11 +112,11 @@ const FarmerLayout: React.FC<FarmerLayoutProps> = ({ children }) => {
         <div>
           {/* Logo Section */}
           <div className="flex items-center justify-between p-5 border-b border-inherit">
-            <Link href="/" className="flex items-center gap-2">
-              <div className={`p-2 rounded-xl text-white ${darkMode ? "bg-[#8cc655]" : "bg-[#316312]"}`}>
+            <Link href="/" className="flex items-center gap-2 min-w-0">
+              <div className={`p-2 rounded-xl text-white flex-shrink-0 ${darkMode ? "bg-[#8cc655]" : "bg-[#316312]"}`}>
                 <Sprout size={22} className={darkMode ? "text-[#111a17]" : "text-white"} />
               </div>
-              <span className={`font-bold text-lg tracking-tight ${darkMode ? "text-[#9ece6a]" : "text-emerald-800"}`}>
+              <span className={`font-bold text-base sm:text-lg tracking-tight truncate ${darkMode ? "text-[#9ece6a]" : "text-emerald-800"}`}>
                 ফসলবাড়ি ফার্মার
               </span>
             </Link>

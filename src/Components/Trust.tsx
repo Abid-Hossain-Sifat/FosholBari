@@ -45,7 +45,7 @@ const Trust = () => {
         darkMode ? "bg-[#1B2420]" : "bg-[#faf9f5]"
       }`}
     >
-      <div className="max-w-[90%] lg:max-w-[80%] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="max-w-[92%] sm:max-w-[88%] md:max-w-[85%] lg:max-w-[80%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {trustItems.map((item, index) => {
           const Icon = item.icon;
           return (

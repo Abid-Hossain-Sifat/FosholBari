@@ -8,11 +8,9 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Truck, Leaf, Phone, UploadCl
 import { authClient } from "@/lib/auth-client";
 import { toast } from "react-toastify";
 
-// import image
 const loginD = "/Assets/loginD.jpg";
 const loginN = "/Assets/loginN.jpg";
 
-// Helper to translate Better Auth English error messages to Bengali
 const translateError = (errMessage?: string | null): string => {
   if (!errMessage) return "একটি অজানা সমস্যা দেখা দিয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
   

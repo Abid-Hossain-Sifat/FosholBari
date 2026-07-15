@@ -148,10 +148,10 @@ const FarmerPage: React.FC = () => {
             </select>
           </div>
           
-          <div className="h-64 flex flex-col justify-end">
-            <div className="flex items-end justify-between h-48 px-2 gap-2 sm:gap-4">
+          <div className="h-64 flex flex-col justify-end overflow-x-auto">
+            <div className="flex items-end justify-between h-48 px-1 sm:px-2 gap-1 sm:gap-2 md:gap-4 min-w-[520px] sm:min-w-0">
               {[40, 25, 60, 45, 85, 55, 95, 70, 65, 80, 50, 90].map((val, idx) => (
-                <div key={idx} className="flex-1 flex flex-col items-center group h-full justify-end">
+                <div key={idx} className="flex-1 flex flex-col items-center group h-full justify-end min-w-0">
                   <div 
                     style={{ height: `${val}%` }} 
                     className={`w-full rounded-t-md transition-colors duration-200 ${
@@ -160,7 +160,7 @@ const FarmerPage: React.FC = () => {
                         : "bg-gradient-to-t from-emerald-850/30 to-[#316312] group-hover:to-emerald-500"
                     }`}
                   />
-                  <span className="text-[10px] text-gray-400 mt-2 select-none">
+                  <span className={`text-[8px] sm:text-[10px] text-gray-400 mt-2 select-none text-center leading-tight ${idx % 2 !== 0 ? "hidden sm:inline" : ""}`}>
                     {["জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলা", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে"][idx]}
                   </span>
                 </div>

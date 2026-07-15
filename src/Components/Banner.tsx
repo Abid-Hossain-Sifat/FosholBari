@@ -88,7 +88,6 @@ const Banner: React.FC = () => {
 
   return (
     <div className={`relative w-full h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] min-h-[480px] max-h-[780px] overflow-hidden ${darkMode ? 'bg-[#1B2420]' : 'bg-[#faf9f5]'}`}>
-      {/* Bengali-friendly display + body fonts, scoped to this component */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600&display=swap');
         .banner-display { font-family: 'Baloo Da 2', 'Hind Siliguri', sans-serif; }

@@ -5,10 +5,8 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react"
-import { usePathname } from "next/navigation"
 import { HarvestLoader } from "./HarvestLoader"
 
 interface LoadingContextType {
@@ -26,9 +24,6 @@ export function LoadingProvider({
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [showInitial, setShowInitial] = useState<boolean>(true)
   const [globalLoading, setGlobalLoadingState] = useState(false)
-
-  const pathname = usePathname()
-  const routeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Initial brand loader (3 s, only once per session) ──────────────────
   useEffect(() => {
@@ -56,36 +51,8 @@ export function LoadingProvider({
     }
   }, [])
 
-  // Tracks whether this is the very first effect execution (skip hydration mismatch)
-  const isMounted = useRef(false)
-
-  // ── Route-change → global loading overlay ─────────────────────────────
-  useEffect(() => {
-    // Skip the initial mount — prevents hydration null→pathname diff from firing
-    if (!isMounted.current) {
-      isMounted.current = true
-      return
-    }
-
-    setGlobalLoadingState(true)
-    if (routeTimerRef.current) clearTimeout(routeTimerRef.current)
-
-    routeTimerRef.current = setTimeout(() => {
-      setGlobalLoadingState(false)
-    }, 900)
-
-    return () => {
-      if (routeTimerRef.current) clearTimeout(routeTimerRef.current)
-    }
-  }, [pathname])
-
   const setGlobalLoading = useCallback((loading: boolean) => {
     setGlobalLoadingState(loading)
-    // If manually dismissed, clear any pending auto-dismiss timer
-    if (!loading && routeTimerRef.current) {
-      clearTimeout(routeTimerRef.current)
-      routeTimerRef.current = null
-    }
   }, [])
 
   // ── Initial full-screen brand loader ──────────────────────────────────

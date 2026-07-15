@@ -130,7 +130,7 @@ const ExploreDetails = () => {
   return (
     <div className="min-h-screen w-full bg-[#faf9f5] text-[#1A1A1A] dark:bg-[#111a17] dark:text-[#F8FAFC] py-6 sm:py-10 px-4 sm:px-6 transition-colors duration-300">
 
-      <div className="w-full max-w-[80%] mx-auto">
+      <div className="w-full max-w-[92%] sm:max-w-[88%] md:max-w-[85%] lg:max-w-[80%] mx-auto">
 
         {/* Breadcrumb */}
         <motion.nav
@@ -284,7 +284,7 @@ const ExploreDetails = () => {
             </div>
 
             {/* Badges */}
-            <div className="grid grid-cols-3 gap-2 bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800 p-3.5 rounded-2xl text-center shadow-sm">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-white dark:bg-[#1a2622] border border-gray-100 dark:border-gray-800 p-2.5 sm:p-3.5 rounded-2xl text-center shadow-sm">
               {staticFeatures.map((item, index) => {
                 const Icon = item.icon;
                 return (

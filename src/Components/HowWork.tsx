@@ -62,11 +62,10 @@ const HowWork = () => {
           কিভাবে কাজ করে
         </motion.h2>
 
-        <div className="relative w-full flex flex-col sm:flex-row sm:justify-between items-center gap-y-12 sm:gap-y-0">
+        <div className="relative w-full flex flex-col sm:flex-row sm:justify-between sm:items-start items-center gap-y-12 sm:gap-y-0 sm:gap-x-4">
 
-          {/* Connecting line (desktop only) */}
           <div
-            className={`hidden sm:block absolute top-5 left-7 right-7 h-[2px] ${
+            className={`hidden sm:block absolute top-5 left-[12%] right-[12%] h-[2px] ${
               darkMode ? "bg-[#26332d]" : "bg-gray-300"
             }`}
           />
@@ -80,7 +79,7 @@ const HowWork = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.4, delay: index * 0.2, ease: "easeOut" }}
-                className="relative flex flex-col items-center text-center gap-3 w-full sm:w-14"
+                className="relative flex flex-col items-center text-center gap-3 w-full sm:flex-1 sm:max-w-[220px] px-2"
               >
                 {/* Number badge */}
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#316312] text-white font-bold text-sm z-10 shadow-sm">
@@ -106,7 +105,7 @@ const HowWork = () => {
 
                 {/* Title + Subtitle */}
                 <h3
-                  className={`text-base font-bold whitespace-nowrap ${
+                  className={`text-base font-bold leading-snug ${
                     darkMode ? "text-gray-100" : "text-emerald-950"
                   }`}
                 >
@@ -114,7 +113,7 @@ const HowWork = () => {
                 </h3>
 
                 <p
-                  className={`text-sm font-medium whitespace-nowrap ${
+                  className={`text-sm font-medium leading-snug ${
                     darkMode ? "text-[#9ece6a]" : "text-emerald-700"
                   }`}
                 >

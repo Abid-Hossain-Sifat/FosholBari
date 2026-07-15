@@ -13,20 +13,25 @@ export default function DashboardPage() {
     if (isPending) return;
 
     if (!session?.user) {
-      router.push("/auth");
+      router.replace("/auth");
+      return;
+    }
+
+    const role = session.user.role;
+    if (role === "Buyer") {
+      router.replace("/dashboard/buyer");
+    } else if (role === "Farmer") {
+      router.replace("/dashboard/farmer");
+    } else if (role === "Admin") {
+      router.replace("/dashboard/admin");
     } else {
-      const role = session.user.role;
-      if (role === "Buyer") {
-        router.push("/dashboard/buyer");
-      } else if (role === "Farmer") {
-        router.push("/dashboard/farmer");
-      } else if (role === "Admin") {
-        router.push("/dashboard/admin");
-      } else {
-        router.push("/unauthorized");
-      }
+      router.replace("/unauthorized");
     }
   }, [session, isPending, router]);
+
+  if (!isPending) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#faf9f5] dark:bg-[#111a17]">

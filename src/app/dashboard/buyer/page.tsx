@@ -90,7 +90,7 @@ const BuyerPage = () => {
         </div>
 
         {/* Responsive Table wrapper */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className={`text-xs font-bold border-b ${
@@ -119,6 +119,24 @@ const BuyerPage = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="md:hidden divide-y divide-gray-100 dark:divide-[#2c3d36]">
+          {recentOrders.map((order) => (
+            <div key={order.id} className={`p-4 space-y-2 ${darkMode ? "hover:bg-[#1B2420]/40" : "hover:bg-stone-50/50"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <span className={`text-sm font-bold ${darkMode ? "text-white" : "text-stone-900"}`}>{order.id}</span>
+                <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 ${order.statusColor}`}>
+                  {order.status === "Delivered" ? "ডেলিভার্ড" : order.status === "Processing" ? "প্রসেসিং" : "পেন্ডিং"}
+                </span>
+              </div>
+              <p className="text-sm font-semibold">{order.crop}</p>
+              <div className="flex items-center justify-between text-xs text-gray-400">
+                <span>{order.qty}</span>
+                <span>{order.date}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
