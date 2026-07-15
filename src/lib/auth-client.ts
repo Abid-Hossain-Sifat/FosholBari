@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { inferAdditionalFields } from "better-auth/client/plugins";
+import { inferAdditionalFields, jwtClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
     baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
@@ -9,6 +9,7 @@ export const authClient = createAuthClient({
                 role: { type: "string" },
                 phoneNumber: { type: "string" }
             }
-        })
+        }),
+        jwtClient(),
     ]
 });

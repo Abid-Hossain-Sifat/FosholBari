@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 import { Suspense } from "react";
 import { LoadingProvider, HarvestLoader } from "@/Components/loading";
 import LayoutShell from "@/Components/LayoutShell";
+import AuthSync from "@/Components/AuthSync";
 
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans' })
 const hindSiliguri = Hind_Siliguri({

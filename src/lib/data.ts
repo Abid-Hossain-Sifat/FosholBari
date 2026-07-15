@@ -1,3 +1,5 @@
+import { jwtHelper } from "./jwt-helper";
+
 const BASE = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:11111";
 const EXPLORE_URL = process.env.NEXT_PUBLIC_EXPLORE_URL || `${BASE}/explore`;
 const ORDERS_URL = process.env.NEXT_PUBLIC_ORDERS_URL || `${BASE}/orders`;
@@ -6,6 +8,19 @@ const BAZAR_NOTES_URL = process.env.NEXT_PUBLIC_BAZAR_NOTES_URL || `${BASE}/baza
 const PROFILE_URL = process.env.NEXT_PUBLIC_PROFILE_URL || `${BASE}/profile`;
 const STATS_URL = process.env.NEXT_PUBLIC_STATS_URL || `${BASE}/stats`;
 const ADMIN_URL = `${BASE}/admin`;
+
+const apiFetch = (url: string, options: RequestInit = {}) =>
+  fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options.headers || {}),
+      ...jwtHelper.authHeaders(),
+    },
+  });
+
+// ImageBB uses a different API domain — no auth headers
+const imgbbFetch = (url: string, options: RequestInit = {}) => fetch(url, options);
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -42,24 +57,24 @@ export const exploreCollection = async (filters?: ExploreFilters) => {
 
   const query = params.toString();
   const url = query ? `${EXPLORE_URL}?${query}` : EXPLORE_URL;
-  const res = await fetch(url, { credentials: "include" });
+  const res = await apiFetch(url, { credentials: "include" });
   return res.json();
 };
 
 export const exploreProductById = async (id: string) => {
-  const res = await fetch(`${EXPLORE_URL}/${id}`);
+  const res = await apiFetch(`${EXPLORE_URL}/${id}`);
   if (!res.ok) return null;
   return res.json();
 };
 
 export const exploreFiltersMeta = async () => {
-  const res = await fetch(`${EXPLORE_URL}/filters`);
+  const res = await apiFetch(`${EXPLORE_URL}/filters`);
   if (!res.ok) return { categories: [], tags: [] };
   return res.json();
 };
 
 export const addProduct = async (data: object) => {
-  const res = await fetch(EXPLORE_URL, {
+  const res = await apiFetch(EXPLORE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -69,7 +84,7 @@ export const addProduct = async (data: object) => {
 };
 
 export const updateProduct = async (id: string, data: object) => {
-  const res = await fetch(`${EXPLORE_URL}/${id}`, {
+  const res = await apiFetch(`${EXPLORE_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -79,7 +94,7 @@ export const updateProduct = async (id: string, data: object) => {
 };
 
 export const deleteProduct = async (id: string) => {
-  const res = await fetch(`${EXPLORE_URL}/${id}`, {
+  const res = await apiFetch(`${EXPLORE_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -95,7 +110,7 @@ export const deleteProduct = async (id: string) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getOrders = async (role: "buyer" | "farmer") => {
-  const res = await fetch(`${ORDERS_URL}?role=${role}`, {
+  const res = await apiFetch(`${ORDERS_URL}?role=${role}`, {
     credentials: "include",
   });
   if (!res.ok) return [];
@@ -109,7 +124,7 @@ export const createOrder = async (data: {
   address?: string;
   phone?: string;
 }) => {
-  const res = await fetch(ORDERS_URL, {
+  const res = await apiFetch(ORDERS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -123,7 +138,7 @@ export const createOrder = async (data: {
 };
 
 export const updateOrderStatus = async (id: string, status: string) => {
-  const res = await fetch(`${ORDERS_URL}/${id}`, {
+  const res = await apiFetch(`${ORDERS_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -142,13 +157,13 @@ export const updateOrderStatus = async (id: string, status: string) => {
 
 export const getDemands = async (my?: boolean) => {
   const url = my ? `${DEMANDS_URL}?my=true` : DEMANDS_URL;
-  const res = await fetch(url, { credentials: "include" });
+  const res = await apiFetch(url, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const createDemand = async (data: object) => {
-  const res = await fetch(DEMANDS_URL, {
+  const res = await apiFetch(DEMANDS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -158,7 +173,7 @@ export const createDemand = async (data: object) => {
 };
 
 export const addDemandComment = async (id: string, text: string) => {
-  const res = await fetch(`${DEMANDS_URL}/${id}/comments`, {
+  const res = await apiFetch(`${DEMANDS_URL}/${id}/comments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -172,7 +187,7 @@ export const addDemandComment = async (id: string, text: string) => {
 };
 
 export const updateDemand = async (id: string, data: object) => {
-  const res = await fetch(`${DEMANDS_URL}/${id}`, {
+  const res = await apiFetch(`${DEMANDS_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -182,7 +197,7 @@ export const updateDemand = async (id: string, data: object) => {
 };
 
 export const deleteDemand = async (id: string) => {
-  const res = await fetch(`${DEMANDS_URL}/${id}`, {
+  const res = await apiFetch(`${DEMANDS_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -194,13 +209,13 @@ export const deleteDemand = async (id: string) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getBazarNotes = async () => {
-  const res = await fetch(BAZAR_NOTES_URL, { credentials: "include" });
+  const res = await apiFetch(BAZAR_NOTES_URL, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const createBazarNote = async (data: object) => {
-  const res = await fetch(BAZAR_NOTES_URL, {
+  const res = await apiFetch(BAZAR_NOTES_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -210,7 +225,7 @@ export const createBazarNote = async (data: object) => {
 };
 
 export const updateBazarNote = async (id: string, data: object) => {
-  const res = await fetch(`${BAZAR_NOTES_URL}/${id}`, {
+  const res = await apiFetch(`${BAZAR_NOTES_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -220,7 +235,7 @@ export const updateBazarNote = async (id: string, data: object) => {
 };
 
 export const deleteBazarNote = async (id: string) => {
-  const res = await fetch(`${BAZAR_NOTES_URL}/${id}`, {
+  const res = await apiFetch(`${BAZAR_NOTES_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -251,13 +266,13 @@ export interface ProfileUpdatePayload {
 }
 
 export const getProfile = async () => {
-  const res = await fetch(PROFILE_URL, { credentials: "include" });
+  const res = await apiFetch(PROFILE_URL, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch profile");
   return res.json();
 };
 
 export const updateProfile = async (data: ProfileUpdatePayload) => {
-  const res = await fetch(PROFILE_URL, {
+  const res = await apiFetch(PROFILE_URL, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -272,13 +287,13 @@ export const updateProfile = async (data: ProfileUpdatePayload) => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getFarmerStats = async () => {
-  const res = await fetch(`${STATS_URL}/farmer`, { credentials: "include" });
+  const res = await apiFetch(`${STATS_URL}/farmer`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 };
 
 export const getBuyerStats = async () => {
-  const res = await fetch(`${STATS_URL}/buyer`, { credentials: "include" });
+  const res = await apiFetch(`${STATS_URL}/buyer`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 };
@@ -288,19 +303,19 @@ export const getBuyerStats = async () => {
 // ══════════════════════════════════════════════════════════════════
 
 export const getAdminStats = async () => {
-  const res = await fetch(`${STATS_URL}/admin`, { credentials: "include" });
+  const res = await apiFetch(`${STATS_URL}/admin`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 };
 
 export const getAdminUsers = async () => {
-  const res = await fetch(`${ADMIN_URL}/users`, { credentials: "include" });
+  const res = await apiFetch(`${ADMIN_URL}/users`, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const updateUserRole = async (id: string, role: string) => {
-  const res = await fetch(`${ADMIN_URL}/users/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/users/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -312,7 +327,7 @@ export const updateUserRole = async (id: string, role: string) => {
 };
 
 export const deleteUser = async (id: string) => {
-  const res = await fetch(`${ADMIN_URL}/users/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/users/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -321,13 +336,13 @@ export const deleteUser = async (id: string) => {
 };
 
 export const getAdminOrders = async () => {
-  const res = await fetch(`${ADMIN_URL}/orders`, { credentials: "include" });
+  const res = await apiFetch(`${ADMIN_URL}/orders`, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 };
 
 export const updateAnyOrderStatus = async (id: string, status: string) => {
-  const res = await fetch(`${ADMIN_URL}/orders/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/orders/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -339,7 +354,7 @@ export const updateAnyOrderStatus = async (id: string, status: string) => {
 };
 
 export const deleteAnyOrder = async (id: string) => {
-  const res = await fetch(`${ADMIN_URL}/orders/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/orders/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -348,7 +363,7 @@ export const deleteAnyOrder = async (id: string) => {
 };
 
 export const deleteAnyProduct = async (id: string) => {
-  const res = await fetch(`${ADMIN_URL}/explore/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/explore/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -357,7 +372,7 @@ export const deleteAnyProduct = async (id: string) => {
 };
 
 export const deleteAnyDemand = async (id: string) => {
-  const res = await fetch(`${ADMIN_URL}/demands/${id}`, {
+  const res = await apiFetch(`${ADMIN_URL}/demands/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -375,7 +390,7 @@ export const uploadToImageBB = async (base64Image: string): Promise<string> => {
     : base64Image;
   const formData = new FormData();
   formData.append("image", base64Data);
-  const res = await fetch(
+  const res = await imgbbFetch(
     `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMAGEBB_API}`,
     { method: "POST", body: formData }
   );
