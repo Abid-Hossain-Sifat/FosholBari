@@ -90,7 +90,7 @@ const FarmerLayout: React.FC<FarmerLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${
+    <div className={`flex h-screen overflow-hidden transition-colors duration-300 ${
       darkMode ? "bg-[#111a17] text-gray-200" : "bg-[#fafcfb] text-emerald-950"
     }`}>
       
@@ -177,7 +177,7 @@ const FarmerLayout: React.FC<FarmerLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden">
         {/* Mobile Header */}
         <header className={`lg:hidden flex items-center justify-between p-4 border-b ${
           darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-[#f5f4f0] border-[#e6e2d8]"

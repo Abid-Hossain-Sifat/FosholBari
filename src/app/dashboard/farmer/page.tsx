@@ -1,52 +1,140 @@
 "use client";
 
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { 
-  TrendingUp, 
-  ShoppingBag, 
-  Leaf, 
-  Clock, 
-  ArrowUpRight, 
-  CheckCircle2, 
-  AlertCircle 
+import {
+  TrendingUp,
+  ShoppingBag,
+  Leaf,
+  Clock,
+  ArrowUpRight,
 } from "lucide-react";
-
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { authClient } from "@/lib/auth-client";
-
-interface Order {
-  id: string;
-  buyer: string;
-  product: string;
-  qty: string;
-  total: string;
-  status: "Delivered" | "Pending";
-}
+import { getFarmerStats, getOrders } from "@/lib/data";
+import { HarvestLoader } from "@/Components/loading";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
   return useSyncExternalStore(emptySubscribe, () => true, () => false);
 }
 
-const recentOrders: Order[] = [
-  { id: "#ORD-9023", buyer: "মইনুল ইসলাম", product: "প্রিমিয়াম মিনিকেট চাল", qty: "৫০ কেজি", total: "৳৩,৫০০", status: "Delivered" },
-  { id: "#ORD-9024", buyer: "আনিকা রহমান", product: "অর্গানিক টমেটো", qty: "১২ কেজি", total: "৳১,৪৪০", status: "Pending" },
-  { id: "#ORD-9025", buyer: "তামিম ইকবাল", product: "আম্রপালি আম", qty: "২০ কেজি", total: "৳৪,০০০", status: "Delivered" },
-  { id: "#ORD-9026", buyer: "সুজন আহমেদ", product: "দেশী পেঁয়াজ", qty: "৪০ কেজি", total: "৳২,৮০০", status: "Pending" },
-  { id: "#ORD-9027", buyer: "নাবিলা হাসান", product: "কাঁচা মরিচ", qty: "৫ কেজি", total: "৳৭৫০", status: "Delivered" },
-];
+const bnMonths = ["জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলা", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে"];
 
-const FarmerPage: React.FC = () => {
+interface FarmerStats {
+  totalProducts: number;
+  outOfStock: number;
+  totalOrders: number;
+  pendingOrders: number;
+  totalRevenue: number;
+  recentOrders: any[];
+}
+
+const statusStyles: Record<string, string> = {
+  Delivered: "bg-green-500/10 text-green-500 border-green-500/20",
+  Shipped: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  Pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  Cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+};
+
+const statusLabel = (s: string) => {
+  if (s === "Delivered") return "ডেলিভার্ড";
+  if (s === "Shipped") return "শিপড";
+  if (s === "Cancelled") return "বাতিল";
+  return "পেন্ডিং";
+};
+
+const FarmerPage = () => {
   const { theme } = useTheme();
   const mounted = useMounted();
   const darkMode = mounted && theme === "dark";
-
   const { data: session } = authClient.useSession();
   const farmerName = session?.user?.name || "কৃষক";
 
+  const [stats, setStats] = useState<FarmerStats | null>(null);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [s, orders] = await Promise.all([
+        getFarmerStats(),
+        getOrders("farmer"),
+      ]);
+      if (s) setStats(s as FarmerStats);
+      if (Array.isArray(orders)) setAllOrders(orders);
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    loadData();
+  }, [session?.user?.id, loadData]);
+
+  const revenue = stats?.totalRevenue ?? 0;
+  const totalOrders = stats?.totalOrders ?? 0;
+  const totalProducts = stats?.totalProducts ?? 0;
+  const outOfStock = stats?.outOfStock ?? 0;
+  const pendingOrders = stats?.pendingOrders ?? 0;
+  const recentOrders = stats?.recentOrders ?? [];
+
+  // Build monthly chart data from all orders
+  const monthlyMap = new Map<number, number>();
+  for (const o of allOrders) {
+    if (o.createdAt && (o.status === "Delivered")) {
+      const d = new Date(o.createdAt);
+      const m = d.getMonth();
+      monthlyMap.set(m, (monthlyMap.get(m) || 0) + (o.total || 0));
+    }
+  }
+  const chartData = bnMonths.map((name, i) => ({
+    name,
+    income: monthlyMap.get(i) || 0,
+  }));
+  const hasChartData = chartData.some((d) => d.income > 0);
+
+  // Build category data from product names in orders
+  const categoryCount = new Map<string, number>();
+  for (const o of allOrders) {
+    const name = o.productName || "অন্যান্য";
+    categoryCount.set(name, (categoryCount.get(name) || 0) + 1);
+  }
+  const sortedCats = [...categoryCount.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const totalCatCount = sortedCats.reduce((s, [, c]) => s + c, 0);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className={`px-3 py-2 rounded-xl border shadow-lg text-xs font-semibold ${
+        darkMode
+          ? "bg-[#16201c] border-[#2c3d36] text-gray-200"
+          : "bg-white border-gray-200 text-stone-800"
+      }`}>
+        <p className="text-gray-400 mb-1">{label}</p>
+        <p className={darkMode ? "text-[#9ece6a]" : "text-emerald-700"}>
+          ৳{payload[0].value.toLocaleString("bn-BD")}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header Greeting */}
+      {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
           স্বাগতম, {farmerName}!
@@ -56,72 +144,69 @@ const FarmerPage: React.FC = () => {
         </p>
       </div>
 
-      {/* --- Top Summary Cards Grid --- */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
-        {/* Card 1: Revenue */}
         <div className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 ${
           darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
         }`}>
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">মোট উপার্জন</p>
-              <h3 className="text-2xl font-bold mt-2">৳৪৫,২০০</h3>
+              <h3 className="text-2xl font-bold mt-2">
+                {loading ? "—" : `৳${revenue.toLocaleString("bn-BD")}`}
+              </h3>
             </div>
-            <div className={`p-3 rounded-xl text-white ${darkMode ? "bg-[#8cc655]/20 text-[#9ece6a]" : "bg-[#316312] text-white"}`}>
+            <div className={`p-3 rounded-xl ${darkMode ? "bg-[#8cc655]/20 text-[#9ece6a]" : "bg-[#316312] text-white"}`}>
               <TrendingUp size={20} />
             </div>
           </div>
           <div className="flex items-center gap-1 mt-4 text-xs text-emerald-600 dark:text-[#9ece6a] font-medium">
             <ArrowUpRight size={14} />
-            <span>গত মাসের তুলনায় +১২.৫% বৃদ্ধি</span>
+            <span>ডেলিভার্ড অর্ডার থেকে</span>
           </div>
         </div>
 
-        {/* Card 2: Total Orders */}
         <div className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 ${
           darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
         }`}>
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">মোট অর্ডার</p>
-              <h3 className="text-2xl font-bold mt-2">১৮০ টি</h3>
+              <h3 className="text-2xl font-bold mt-2">{loading ? "—" : `${totalOrders} টি`}</h3>
             </div>
             <div className="p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-300">
               <ShoppingBag size={20} />
             </div>
           </div>
           <div className="flex items-center gap-1 mt-4 text-xs text-gray-400">
-            <span>সকল তালিকাভুক্ত ফসলের উপর</span>
+            <span>{pendingOrders} টি পেন্ডিং</span>
           </div>
         </div>
 
-        {/* Card 3: Active Crops */}
         <div className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 ${
           darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
         }`}>
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 font-bangla">সক্রিয় ফসল</p>
-              <h3 className="text-2xl font-bold mt-2">১৪ টি</h3>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">সক্রিয় ফসল</p>
+              <h3 className="text-2xl font-bold mt-2">{loading ? "—" : `${totalProducts} টি`}</h3>
             </div>
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-[#316312]/10 text-emerald-800 dark:text-[#9ece6a]">
               <Leaf size={20} />
             </div>
           </div>
           <div className="flex items-center gap-1 mt-4 text-xs text-gray-400">
-            <span>৪টি ফসল স্টকের বাইরে আছে</span>
+            <span>{outOfStock > 0 ? `${outOfStock} টি স্টকের বাইরে` : "সব পণ্য স্টকে আছে"}</span>
           </div>
         </div>
 
-        {/* Card 4: Pending Deliveries */}
         <div className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 ${
           darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
         }`}>
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">পেন্ডিং ডেলিভারি</p>
-              <h3 className="text-2xl font-bold mt-2">০৫ টি</h3>
+              <h3 className="text-2xl font-bold mt-2">{loading ? "—" : `${pendingOrders} টি`}</h3>
             </div>
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-500">
               <Clock size={20} />
@@ -131,88 +216,108 @@ const FarmerPage: React.FC = () => {
             <span>দ্রুত প্যাকেজিং করা প্রয়োজন</span>
           </div>
         </div>
-
       </div>
 
-      {/* --- Sales Analytics & Breakdown Graph --- */}
+      {/* Sales Analytics & Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Graph (2/3 width) */}
-        <div className={`p-5 rounded-2xl border ${
-          darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
-        } lg:col-span-2`}>
+        {/* Area Chart */}
+        <div className={`p-5 rounded-2xl border ${darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"} lg:col-span-2`}>
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="font-bold text-lg">বিক্রয়ের বিশ্লেষণ</h3>
-              <p className="text-xs text-gray-400">মাসিক ফসলের আয়ের ট্র্যাকিং</p>
+              <p className="text-xs text-gray-400">মাসিক আয়ের ট্র্যাকিং</p>
             </div>
-            <select className="px-3 py-1.5 text-xs font-semibold rounded-lg border bg-gray-50 dark:bg-gray-800 border-inherit focus:outline-none dark:text-gray-200 cursor-pointer">
-              <option>চলতি মাস</option>
-              <option>গত ৩ মাস</option>
-              <option>বার্ষিক</option>
-            </select>
           </div>
-          
-          <div className="h-64 flex flex-col justify-end overflow-x-auto">
-            <div className="flex items-end justify-between h-48 px-1 sm:px-2 gap-1 sm:gap-2 md:gap-4 min-w-[520px] sm:min-w-0">
-              {[40, 25, 60, 45, 85, 55, 95, 70, 65, 80, 50, 90].map((val, idx) => (
-                <div key={idx} className="flex-1 flex flex-col items-center group h-full justify-end min-w-0">
-                  <div 
-                    style={{ height: `${val}%` }} 
-                    className={`w-full rounded-t-md transition-colors duration-200 ${
-                      darkMode 
-                        ? "bg-gradient-to-t from-[#8cc655]/20 to-[#8cc655] group-hover:to-teal-500" 
-                        : "bg-gradient-to-t from-emerald-850/30 to-[#316312] group-hover:to-emerald-500"
-                    }`}
+
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <HarvestLoader variant="fallback" className="!min-h-0" />
+            </div>
+          ) : !hasChartData ? (
+            <div className="h-64 flex items-center justify-center text-gray-400 text-sm font-medium">
+              এখনো কোনো ডেলিভার্ড অর্ডার নেই। অর্ডার পেলে এখানে চার্ট প্রদর্শিত হবে।
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={darkMode ? "#9ece6a" : "#316312"} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={darkMode ? "#9ece6a" : "#316312"} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={darkMode ? "#26332d" : "#e5e7eb"}
+                    vertical={false}
                   />
-                  <span className={`text-[8px] sm:text-[10px] text-gray-400 mt-2 select-none text-center leading-tight ${idx % 2 !== 0 ? "hidden sm:inline" : ""}`}>
-                    {["জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলা", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে"][idx]}
-                  </span>
-                </div>
-              ))}
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: darkMode ? "#9ca3af" : "#6b7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: darkMode ? "#9ca3af" : "#6b7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => `৳${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: darkMode ? "#9ece6a" : "#316312", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Area
+                    type="monotone"
+                    dataKey="income"
+                    stroke={darkMode ? "#9ece6a" : "#316312"}
+                    strokeWidth={2.5}
+                    fill="url(#incomeGrad)"
+                    activeDot={{ r: 6, fill: darkMode ? "#9ece6a" : "#316312", stroke: darkMode ? "#16201c" : "#fff", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Categories Breakdown (1/3 width) */}
-        <div className={`p-5 rounded-2xl border ${
-          darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"
-        } flex flex-col justify-between`}>
+        {/* Categories Breakdown */}
+        <div className={`p-5 rounded-2xl border ${darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"} flex flex-col justify-between`}>
           <div>
-            <h3 className="font-bold text-lg mb-1">জনপ্রিয় ক্যাটাগরি</h3>
-            <p className="text-xs text-gray-400 mb-6">এই মরসুমে সবচেয়ে বেশি বিক্রি হওয়া ফসল</p>
-            
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>প্রিমিয়াম চাল</span>
-                  <span>৫২%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                  <div className={`h-full rounded-full ${darkMode ? "bg-[#8cc655]" : "bg-[#316312]"}`} style={{ width: "52%" }}></div>
-                </div>
-              </div>
+            <h3 className="font-bold text-lg mb-1">সর্বাধিক বিক্রিত</h3>
+            <p className="text-xs text-gray-400 mb-6">সবচেয়ে বেশি অর্ডারকৃত পণ্য</p>
 
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>অর্গানিক সবজি</span>
-                  <span>২৮%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                  <div className="h-full bg-teal-600 rounded-full" style={{ width: "28%" }}></div>
-                </div>
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+                    <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>মৌসুমি ফল</span>
-                  <span>২০%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                  <div className="h-full bg-amber-500 rounded-full" style={{ width: "20%" }}></div>
-                </div>
+            ) : sortedCats.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">এখনো কোনো অর্ডার নেই</p>
+            ) : (
+              <div className="space-y-4">
+                {sortedCats.map(([name, count]) => {
+                  const pct = totalCatCount > 0 ? Math.round((count / totalCatCount) * 100) : 0;
+                  return (
+                    <div key={name}>
+                      <div className="flex justify-between text-xs font-semibold mb-1">
+                        <span className="truncate">{name}</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${darkMode ? "bg-[#8cc655]" : "bg-[#316312]"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
 
           <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 mt-4 border border-dashed border-gray-200 dark:border-gray-800">
@@ -222,7 +327,53 @@ const FarmerPage: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
 
+      {/* Recent Orders Table */}
+      <div className={`rounded-2xl border ${darkMode ? "bg-[#16201c] border-[#26332d]" : "bg-white border-gray-200"}`}>
+        <div className="p-5 border-b border-gray-200 dark:border-[#26332d]">
+          <h3 className="font-bold text-lg">সাম্প্রতিক অর্ডার</h3>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <HarvestLoader variant="fallback" className="!min-h-0" />
+          </div>
+        ) : recentOrders.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm font-medium">
+            এখনো কোনো অর্ডার নেই।
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className={`text-xs font-bold border-b ${darkMode ? "bg-[#111a17] text-gray-400 border-[#26332d]" : "bg-stone-50 text-stone-500 border-gray-200"}`}>
+                  <th className="p-4 pl-6">ক্রেতা</th>
+                  <th className="p-4">পণ্য</th>
+                  <th className="p-4">পরিমাণ</th>
+                  <th className="p-4">মোট</th>
+                  <th className="p-4 pr-6 text-center">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y text-xs sm:text-sm ${darkMode ? "divide-[#26332d] text-gray-300" : "divide-gray-100 text-stone-700"}`}>
+                {recentOrders.map((order: any) => (
+                  <tr key={order._id} className={`transition-colors ${darkMode ? "hover:bg-[#1B2420]/40" : "hover:bg-stone-50/50"}`}>
+                    <td className={`p-4 pl-6 font-bold ${darkMode ? "text-white" : "text-stone-900"}`}>
+                      {order.buyerName || "অজ্ঞাত"}
+                    </td>
+                    <td className="p-4">{order.productName || "—"}</td>
+                    <td className="p-4">{order.qty || order.weight || "—"}</td>
+                    <td className="p-4 font-semibold">৳{(order.total ?? 0).toLocaleString("bn-BD")}</td>
+                    <td className="p-4 pr-6 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusStyles[order.status] || statusStyles.Pending}`}>
+                        {statusLabel(order.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

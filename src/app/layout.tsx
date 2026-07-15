@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "../Components/Navbar";
 import { Hind_Siliguri, Manrope } from 'next/font/google'
+import "./globals.css";
 import { Providers } from "./providers";
 import { Suspense } from "react";
 import { LoadingProvider, HarvestLoader } from "@/Components/loading";
-import Footer from "@/Components/Footer";
+import LayoutShell from "@/Components/LayoutShell";
 
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans' })
 const hindSiliguri = Hind_Siliguri({
@@ -30,9 +30,9 @@ export default function RootLayout({
         <Providers>
           <Suspense fallback={<HarvestLoader variant="fallback" />}>
             <LoadingProvider>
-              <Navbar />
-              {children}
-              <Footer></Footer>
+              <LayoutShell>
+                {children}
+              </LayoutShell>
             </LoadingProvider>
           </Suspense>
         </Providers>

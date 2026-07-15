@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, Suspense } from 'react';
 import { motion, Variants } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { exploreFiltersMeta } from '../../../lib/data';
 
@@ -79,32 +80,6 @@ const ExploreLayoutContent: React.FC<ExploreLayoutProps> = ({ children }) => {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const toggleCategory = (cat: string) => {
-    const updated = checkedCategories.includes(cat)
-      ? checkedCategories.filter((c) => c !== cat)
-      : [...checkedCategories, cat];
-    updateFilters(updated, checkedTags, priceRange);
-  };
-
-  const toggleAllCategories = () => {
-    if (!isAllCategoriesSelected) {
-      updateFilters([], checkedTags, priceRange);
-    }
-  };
-
-  const toggleTag = (tag: string) => {
-    const updated = checkedTags.includes(tag)
-      ? checkedTags.filter((t) => t !== tag)
-      : [...checkedTags, tag];
-    updateFilters(checkedCategories, updated, priceRange);
-  };
-
-  const toggleAllTags = () => {
-    if (!isAllTagsSelected) {
-      updateFilters(checkedCategories, [], priceRange);
-    }
-  };
-
   const handlePriceChange = (value: number) => {
     updateFilters(checkedCategories, checkedTags, value);
   };
@@ -125,11 +100,6 @@ const ExploreLayoutContent: React.FC<ExploreLayoutProps> = ({ children }) => {
       y: 0, 
       transition: { duration: 0.6, ease: 'easeOut', delay: 0.1 } 
     }
-  };
-
-  const filterItemVariants: Variants = {
-    hidden: { opacity: 0, y: 5 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
   return (
@@ -153,72 +123,42 @@ const ExploreLayoutContent: React.FC<ExploreLayoutProps> = ({ children }) => {
               {/* Category */}
               <div className="mb-6">
                 <h4 className="text-sm font-bold mb-3 text-[#316312] dark:text-[#8cc655]">ক্যাটাগরি</h4>
-                <div className="space-y-2.5">
-                  <motion.label 
-                    variants={filterItemVariants}
-                    whileHover={{ x: 3 }}
-                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                <div className="relative">
+                  <select
+                    value={isAllCategoriesSelected ? '' : checkedCategories[0] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateFilters(val ? [val] : [], checkedTags, priceRange);
+                    }}
+                    className="appearance-none w-full bg-white dark:bg-[#121a18] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 pl-3 pr-8 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      checked={isAllCategoriesSelected}
-                      onChange={toggleAllCategories}
-                      className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
-                    />
-                    সকল
-                  </motion.label>
-                  {categories.map((cat) => (
-                    <motion.label 
-                      key={cat} 
-                      variants={filterItemVariants}
-                      whileHover={{ x: 3 }}
-                      className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checkedCategories.includes(cat)}
-                        onChange={() => toggleCategory(cat)}
-                        className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
-                      />
-                      {cat}
-                    </motion.label>
-                  ))}
+                    <option value="">সকল ক্যাটাগরি</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               {/* Tags */}
               <div className="mb-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <h4 className="text-sm font-bold mb-3 text-[#316312] dark:text-[#8cc655]">ট্যাগ</h4>
-                <div className="space-y-2.5">
-                  <motion.label 
-                    variants={filterItemVariants}
-                    whileHover={{ x: 3 }}
-                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                <div className="relative">
+                  <select
+                    value={isAllTagsSelected ? '' : checkedTags[0] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateFilters(checkedCategories, val ? [val] : [], priceRange);
+                    }}
+                    className="appearance-none w-full bg-white dark:bg-[#121a18] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 pl-3 pr-8 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#316312] dark:focus:ring-[#8cc655] cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      checked={isAllTagsSelected}
-                      onChange={toggleAllTags}
-                      className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
-                    />
-                    সকল
-                  </motion.label>
-                  {tags.map((tag) => (
-                    <motion.label 
-                      key={tag} 
-                      variants={filterItemVariants}
-                      whileHover={{ x: 3 }}
-                      className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checkedTags.includes(tag)}
-                        onChange={() => toggleTag(tag)}
-                        className="rounded border-gray-300 text-[#316312] focus:ring-[#316312] dark:bg-[#121a18] dark:border-gray-600 dark:focus:ring-[#8cc655]"
-                      />
-                      {tag}
-                    </motion.label>
-                  ))}
+                    <option value="">সকল ট্যাগ</option>
+                    {tags.map((tag) => (
+                      <option key={tag} value={tag}>{tag}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
