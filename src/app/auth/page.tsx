@@ -104,7 +104,7 @@ const AuthPage = () => {
       const { data, error: loginErr } = await authClient.signIn.email({
         email: loginEmail,
         password: loginPassword,
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin,
       });
 
       if (loginErr) {
@@ -163,7 +163,7 @@ const AuthPage = () => {
         phoneNumber: signupPhone,
         role: signUpRole,
         image: imageUrl || undefined,
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin,
       });
 
       if (signupErr) {
@@ -201,7 +201,7 @@ const AuthPage = () => {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin,
       });
     } catch (err) {
       const msg = translateError(err instanceof Error ? err.message : "গুগল দিয়ে লগইন করা যায়নি।");

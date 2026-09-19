@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, Suspense } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, ChevronDown as SortIcon, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { ChevronDown as SortIcon, ChevronLeft, ChevronRight, Search, X, ArrowRight, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { exploreCollection } from '../../../lib/data';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -300,9 +300,22 @@ const ExplorePageContent = () => {
 
           {/* Product Cards Grid */}
           {products.length === 0 ? (
-            <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-              <p className="text-lg">কোনো পণ্য পাওয়া যায়নি</p>
-              <p className="text-sm mt-1">ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন</p>
+            <div className="text-center py-16 px-4 bg-white dark:bg-[#1a2622] rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 my-4">
+              <div className="w-14 h-14 mx-auto mb-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-[#316312] dark:text-[#8cc655]">
+                <Search className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">কোনো পণ্য পাওয়া যায়নি</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                আপনার অনুসন্ধান বা নির্বাচিত ফিল্টারের সাথে মিলে এমন কোনো পণ্য পাওয়া যায়নি।
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push(pathname)}
+                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-xs sm:text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>সব ফিল্টার রিসেট করুন</span>
+              </button>
             </div>
           ) : (
             <motion.div
@@ -310,29 +323,34 @@ const ExplorePageContent = () => {
               variants={gridVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6"
+              className="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6"
             >
               {products.map((product) => (
                 <motion.div
                   key={product._id}
                   variants={cardVariants}
-                  whileHover={{ y: -6 }}
-                  className="bg-white dark:bg-[#1a2622] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-lg dark:hover:shadow-black/30 transition-shadow duration-300 flex flex-col justify-between group"
+                  whileHover={{ y: -5 }}
+                  className="bg-white dark:bg-[#1a2622] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-lg dark:hover:shadow-black/30 transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <Link href={`/explore/${product._id}`} className="block cursor-pointer flex-1">
+                  <Link 
+                    href={`/explore/${product._id}`} 
+                    className="block cursor-pointer flex-1"
+                    aria-label={`${product.name} বিস্তারিত দেখুন`}
+                  >
                     {/* Image & Badge */}
                     <div className="relative aspect-[4/3] bg-gray-50 dark:bg-[#111a17] overflow-hidden">
                       <img
                         src={product.image}
-                        alt={product.name}
+                        alt={`${product.name} - ফসলবাড়ি তাজা কৃষিপণ্য`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
                       {product.badge && (
                         <span
-                          className={`absolute top-3 left-3 text-xs px-2.5 py-1 rounded-full font-medium shadow-sm ${
+                          className={`absolute top-2.5 left-2.5 text-[11px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-bold shadow-sm ${
                             product.badge.type === 'new'
                               ? 'bg-[#316312] text-white dark:bg-[#8cc655] dark:text-[#111a17]'
-                              : 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400'
+                              : 'bg-rose-600 text-white dark:bg-rose-500'
                           }`}
                         >
                           {product.badge.text}
@@ -342,21 +360,21 @@ const ExplorePageContent = () => {
 
                     {/* Content */}
                     <div className="p-3 sm:p-4">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#316312]/70 dark:text-[#8cc655]/70">
-                        {product.tag}
+                      <span className="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#316312] dark:text-[#8cc655]">
+                        {product.tag || product.category}
                       </span>
-                      <h3 className="font-bold text-sm sm:text-base text-[#254b0e] dark:text-gray-100 mt-0.5 line-clamp-1 group-hover:text-[#316312] dark:group-hover:text-[#8cc655] transition-colors">
+                      <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 mt-0.5 line-clamp-1 group-hover:text-[#316312] dark:group-hover:text-[#8cc655] transition-colors">
                         {product.name}
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{product.unit}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">{product.unit}</p>
                     </div>
                   </Link>
 
                   {/* Price & Action Button */}
                   <div className="p-3 sm:p-4 pt-0">
-                    <div className="flex items-center justify-between mt-1 gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800/80 gap-2 sm:gap-2">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">
+                        <span className="text-base sm:text-lg font-extrabold text-[#316312] dark:text-[#8cc655]">
                           ৳{product.price}
                         </span>
                         {product.originalPrice && (
@@ -366,13 +384,16 @@ const ExplorePageContent = () => {
                         )}
                       </div>
 
-                      <Link href={`/explore/${product._id}`}>
+                      <Link 
+                        href={`/explore/${product._id}`}
+                        className="w-full sm:w-auto"
+                      >
                         <motion.span
                           whileTap={{ scale: 0.95 }}
-                          className="inline-flex items-center gap-1.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-xs font-semibold px-3 py-2 rounded-full transition-colors duration-200 whitespace-nowrap shadow-sm"
+                          className="w-full sm:w-auto min-h-[36px] flex items-center justify-center gap-1.5 bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-full transition-all duration-200 shadow-sm whitespace-nowrap"
                         >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">এখনই ক্রয় করুন</span>
+                          <span>বিস্তারিত</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </motion.span>
                       </Link>
                     </div>

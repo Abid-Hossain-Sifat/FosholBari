@@ -1,7 +1,5 @@
 See `../../AGENTS.md` for full repo guidance.
 
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+### ⚠️ Next.js 16 is unstable
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+Read `node_modules/next/dist/docs/` before writing code. APIs, conventions, and file structure may differ from training data. Heed deprecation notices.

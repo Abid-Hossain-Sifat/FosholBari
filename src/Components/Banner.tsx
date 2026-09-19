@@ -87,21 +87,21 @@ const Banner: React.FC = () => {
   const accent = darkMode ? '#9ece6a' : '#316312';
 
   return (
-    <div className={`relative w-full h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] min-h-[480px] max-h-[780px] overflow-hidden ${darkMode ? 'bg-[#1B2420]' : 'bg-[#faf9f5]'}`}>
+    <div className="relative w-full h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] min-h-[480px] max-h-[780px] overflow-hidden bg-[#111a17]">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600&display=swap');
         .banner-display { font-family: 'Baloo Da 2', 'Hind Siliguri', sans-serif; }
         .banner-body { font-family: 'Hind Siliguri', sans-serif; }
       `}</style>
 
-      <AnimatePresence mode="wait" custom={direction}>
+      <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={currentSlide}
           custom={direction}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.0, ease: 'easeInOut' }}
           className="absolute inset-0 w-full h-full overflow-hidden"
         >
           {/* Slow Ken-Burns zoom on the background so the motion reads as

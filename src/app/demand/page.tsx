@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Clock,
@@ -13,7 +13,11 @@ import {
   Calendar,
   DollarSign,
   Package,
+  PlusCircle,
+  X,
+  Info,
 } from "lucide-react";
+import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "react-toastify";
 import { HarvestLoader } from "@/Components/loading";
@@ -63,6 +67,8 @@ const DemandPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeCommentBox, setActiveCommentBox] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Completed'>('All');
 
   useEffect(() => {
     const fetchAllDemands = async () => {
@@ -101,8 +107,9 @@ const DemandPage = () => {
   };
 
   const handleAddComment = async (demandId: string) => {
-    if (!commentText.trim()) return;
+    if (!commentText.trim() || submittingComment) return;
 
+    setSubmittingComment(true);
     try {
       const res = await fetch(`${DEMANDS_URL}/${demandId}/comments`, {
         method: "POST",
@@ -133,6 +140,8 @@ const DemandPage = () => {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "প্রস্তাব পোস্ট করতে ব্যর্থ হয়েছে।";
       toast.error(errMsg);
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -195,50 +204,117 @@ const DemandPage = () => {
     }
   };
 
+  const filteredDemands = demands.filter((d) => {
+    if (statusFilter === "All") return true;
+    if (statusFilter === "Active") return d.status === "Active";
+    return d.status !== "Active";
+  });
+
   return (
     <div
-      className={`w-full min-h-screen py-12 transition-colors duration-300 ${
+      className={`w-full min-h-screen py-8 sm:py-12 transition-colors duration-300 ${
         darkMode ? "bg-[#1B2420]" : "bg-[#faf9f5]"
       }`}
     >
-      <div className="max-w-[92%] sm:max-w-[88%] md:max-w-[85%] lg:max-w-[80%] mx-auto flex flex-col gap-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="flex flex-col gap-1"
-        >
-          <h2
-            className={`text-2xl sm:text-3xl font-bold ${
-              darkMode ? "text-[#9ece6a]" : "text-emerald-800"
-            }`}
+      <div className="max-w-[92%] sm:max-w-[88%] md:max-w-[85%] lg:max-w-[80%] mx-auto flex flex-col gap-6 sm:gap-8">
+        {/* Header & Primary CTA */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col gap-1.5"
           >
-            ক্রেতাদের চাহিদা
-          </h2>
-          <p
-            className={`text-sm ${
-              darkMode ? "text-gray-400" : "text-gray-600"
-            }`}
+            <h1
+              className={`text-2xl sm:text-3xl font-extrabold ${
+                darkMode ? "text-[#9ece6a]" : "text-emerald-800"
+              }`}
+            >
+              ক্রেতাদের চাহিদা বোর্ড
+            </h1>
+            <p
+              className={`text-xs sm:text-sm max-w-xl ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              ক্রেতারা কী ফসল বা কৃষিপণ্য খুঁজছেন দেখুন, এবং নিবন্ধিত কৃষক হিসেবে সরাসরি আপনার সেরা দর ও প্রস্তাব পাঠান।
+            </p>
+          </motion.div>
+
+          <Link
+            href={session?.user && (session.user as { role?: string }).role === "Buyer" ? "/dashboard/buyer/demand" : "/auth"}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-sm font-bold shadow-sm transition-all whitespace-nowrap self-start sm:self-auto min-h-[44px] cursor-pointer"
           >
-            ক্রেতারা কী পণ্য খুঁজছেন দেখুন, এবং কৃষক হিসেবে আপনি সরাসরি
-            যোগাযোগ করতে পারবেন।
-          </p>
-        </motion.div>
+            <PlusCircle className="w-4 h-4" />
+            <span>নতুন চাহিদা দিন</span>
+          </Link>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3 overflow-x-auto select-none">
+          {(["All", "Active", "Completed"] as const).map((tab) => {
+            const label = tab === "All" ? "সকল চাহিদা" : tab === "Active" ? "চলতি চাহিদা" : "সম্পন্ন";
+            const count = tab === "All" 
+              ? demands.length 
+              : tab === "Active" 
+              ? demands.filter(d => d.status === "Active").length 
+              : demands.filter(d => d.status !== "Active").length;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setStatusFilter(tab)}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 min-h-[38px] ${
+                  statusFilter === tab
+                    ? "bg-[#316312] text-white dark:bg-[#8cc655] dark:text-[#111a17] shadow-sm"
+                    : "bg-white dark:bg-[#16201c] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-800"
+                }`}
+              >
+                <span>{label}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  statusFilter === tab
+                    ? "bg-white/20 dark:bg-black/20 text-white dark:text-[#111a17]"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Demand list */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="col-span-full flex items-center justify-center min-h-[400px]">
-              <HarvestLoader variant="fallback" className="min-h-[400px]" />
+            <div className="col-span-full flex items-center justify-center min-h-[350px]">
+              <HarvestLoader variant="fallback" className="min-h-[350px]" />
             </div>
-          ) : demands.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center text-center py-32 min-h-[400px] rounded-2xl border border-dashed border-gray-300 dark:border-emerald-800/40 text-gray-400 text-base font-medium">
-              এখনো কোনো চাহিদা পোস্ট করা হয়নি।
+          ) : filteredDemands.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center text-center py-24 min-h-[350px] rounded-3xl border border-dashed border-gray-300 dark:border-emerald-800/40 bg-white/50 dark:bg-[#16201c]/50 p-6">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-[#316312] dark:text-[#8cc655] mb-3">
+                <Package className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                {statusFilter === "Active" 
+                  ? "বর্তমানে কোনো চলতি চাহিদা নেই" 
+                  : statusFilter === "Completed"
+                  ? "কোনো সম্পন্ন চাহিদা পাওয়া যায়নি"
+                  : "এখনো কোনো চাহিদা পোস্ট করা হয়নি"}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm">
+                আপনার প্রয়োজনীয় কৃষিপণ্যের বিবরণ জানিয়ে নতুন চাহিদা তৈরি করতে পারেন।
+              </p>
+              <Link
+                href={session?.user && (session.user as { role?: string }).role === "Buyer" ? "/dashboard/buyer/demand" : "/auth"}
+                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#316312] hover:bg-[#254b0e] dark:bg-[#8cc655] dark:hover:bg-[#7bb344] text-white dark:text-[#111a17] text-xs sm:text-sm font-bold shadow-sm transition-all cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>চাহিদা পোস্ট করুন</span>
+              </Link>
             </div>
           ) : (
-            demands.map((demand, index) => {
+            filteredDemands.map((demand, index) => {
               const demandId = demand._id || demand.id || "";
               const buyerName = demand.buyerName || "অজ্ঞাত ক্রেতা";
               const buyerInitial = demand.buyerInitial || buyerName.charAt(0);
@@ -250,16 +326,17 @@ const DemandPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
+                  transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
+                  whileHover={{ y: -5 }}
                   className={`rounded-2xl border p-5 sm:p-6 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col h-full justify-between ${
                     darkMode
-                      ? "bg-[#16201c] border-[#26332d] hover:border-[#9ece6a]/30"
-                      : "bg-white border-gray-200 hover:border-emerald-200"
+                      ? "bg-[#16201c] border-[#26332d] hover:border-[#9ece6a]/40"
+                      : "bg-white border-gray-200 hover:border-emerald-300"
                   }`}
                 >
                   <div className="flex-grow flex flex-col gap-5">
                     {/* Card Header: Buyer info & Status */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-base flex-shrink-0 shadow-sm">
                           {buyerInitial}
@@ -285,10 +362,10 @@ const DemandPage = () => {
                         </div>
                       </div>
                       <span
-                        className={`text-xs font-bold px-3 py-1 rounded-full self-start sm:self-center border ${
+                        className={`text-xs font-extrabold px-3 py-1 rounded-full self-start sm:self-center border ${
                           demand.status === "Active"
-                            ? "bg-green-500/10 text-green-500 border-green-500/20"
-                            : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700"
                         }`}
                       >
                         {demand.status === "Active" ? "চলতি চাহিদা" : "সম্পন্ন চাহিদা"}
@@ -299,7 +376,7 @@ const DemandPage = () => {
                     <div className="space-y-4">
                       <div>
                         <h3
-                          className={`text-lg font-bold ${
+                          className={`text-base sm:text-lg font-extrabold ${
                             darkMode ? "text-white" : "text-emerald-950"
                           }`}
                         >
@@ -307,8 +384,8 @@ const DemandPage = () => {
                         </h3>
                         {demand.description && (
                           <p
-                            className={`text-sm leading-relaxed mt-1.5 ${
-                              darkMode ? "text-gray-400" : "text-gray-600"
+                            className={`text-xs sm:text-sm leading-relaxed mt-1.5 line-clamp-3 ${
+                              darkMode ? "text-gray-300" : "text-gray-600"
                             }`}
                           >
                             {demand.description}
@@ -316,35 +393,35 @@ const DemandPage = () => {
                         )}
                       </div>
 
-                      {/* Key details grid */}
-                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                      {/* Key details grid with Enhanced Typography & Contrast */}
+                      <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                        <div className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-emerald-50/40 border-emerald-100/70"
                         }`}>
-                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                            <Package className="w-3 h-3 text-emerald-600" /> পরিমাণ
+                          <span className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 font-semibold">
+                            <Package className="w-3.5 h-3.5 text-[#316312] dark:text-[#8cc655]" /> পরিমাণ
                           </span>
-                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                          <span className={`text-xs sm:text-sm font-extrabold ${darkMode ? "text-[#9ece6a]" : "text-emerald-800"}`}>
                             {demand.quantity || demand.qty}
                           </span>
                         </div>
-                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                        <div className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-emerald-50/40 border-emerald-100/70"
                         }`}>
-                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                            <DollarSign className="w-3 h-3 text-emerald-600" /> বাজেট
+                          <span className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 font-semibold">
+                            <DollarSign className="w-3.5 h-3.5 text-[#316312] dark:text-[#8cc655]" /> বাজেট
                           </span>
-                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                          <span className={`text-xs sm:text-sm font-extrabold ${darkMode ? "text-[#9ece6a]" : "text-emerald-800"}`}>
                             {formatBudget(demand.budget)}
                           </span>
                         </div>
-                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
-                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-stone-50/50 border-gray-100"
+                        <div className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          darkMode ? "bg-[#111a17] border-[#2c3d36]" : "bg-emerald-50/40 border-emerald-100/70"
                         }`}>
-                          <span className="text-[10px] uppercase tracking-wider text-gray-400 flex items-center gap-1 mb-1">
-                            <Calendar className="w-3 h-3 text-emerald-600" /> সময়সীমা
+                          <span className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 font-semibold">
+                            <Calendar className="w-3.5 h-3.5 text-[#316312] dark:text-[#8cc655]" /> সময়সীমা
                           </span>
-                          <span className={`text-xs sm:text-sm font-bold ${darkMode ? "text-[#9ece6a]" : "text-emerald-700"}`}>
+                          <span className={`text-xs sm:text-sm font-extrabold ${darkMode ? "text-[#9ece6a]" : "text-emerald-800"}`}>
                             {formatDate(demand.deadline)}
                           </span>
                         </div>
@@ -354,34 +431,34 @@ const DemandPage = () => {
 
                   {/* Divider */}
                   <div
-                    className={`h-px my-5 ${
-                      darkMode ? "bg-[#26332d]" : "bg-gray-150"
+                    className={`h-px my-4 sm:my-5 ${
+                      darkMode ? "bg-[#26332d]" : "bg-gray-100"
                     }`}
                   />
 
-                  {/* Comments */}
+                  {/* Comments / Proposals */}
                   <div className="flex flex-col gap-3">
                     {commentsList.length > 0 && (
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
                         {commentsList.map((comment: Comment) => (
                           <div
                             key={comment.id}
                             className="flex items-start gap-2"
                           >
                             <CornerDownRight
-                              className={`w-4 h-4 mt-1 flex-shrink-0 ${
-                                darkMode ? "text-gray-600" : "text-gray-400"
+                              className={`w-3.5 h-3.5 mt-1 flex-shrink-0 ${
+                                darkMode ? "text-gray-500" : "text-gray-400"
                               }`}
                             />
                             <div
-                              className={`flex-1 rounded-xl px-3 py-2 ${
+                              className={`flex-1 rounded-xl px-3 py-2 text-xs sm:text-sm ${
                                 comment.authorRole === "buyer"
                                   ? darkMode
-                                    ? "bg-[#9ece6a]/10"
-                                    : "bg-emerald-50"
+                                    ? "bg-[#9ece6a]/10 border border-[#9ece6a]/20"
+                                    : "bg-emerald-50/70 border border-emerald-100"
                                   : darkMode
-                                  ? "bg-[#1B2420]"
-                                  : "bg-gray-50"
+                                  ? "bg-[#1B2420] border border-[#26332d]"
+                                  : "bg-gray-50 border border-gray-200/70"
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
@@ -394,14 +471,14 @@ const DemandPage = () => {
                                 </span>
                                 <span
                                   className={`text-[10px] ${
-                                    darkMode ? "text-gray-500" : "text-gray-400"
+                                    darkMode ? "text-gray-400" : "text-gray-500"
                                   }`}
                                 >
                                   {formatCommentTime(comment.time)}
                                 </span>
                               </div>
                               <p
-                                className={`text-sm mt-0.5 ${
+                                className={`text-xs sm:text-sm mt-1 leading-relaxed ${
                                   darkMode ? "text-gray-300" : "text-gray-700"
                                 }`}
                               >
@@ -410,6 +487,14 @@ const DemandPage = () => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Role Notice for non-farmers */}
+                    {session?.user && (session.user as { role?: string }).role !== "Farmer" && (
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+                        <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>শুধুমাত্র কৃষকরাই এই চাহিদায় সরাসরি দরপ্রস্তাব পাঠাতে পারেন।</span>
                       </div>
                     )}
 
@@ -423,36 +508,55 @@ const DemandPage = () => {
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleAddComment(demandId);
                           }}
-                          placeholder="আপনার প্রস্তাব লিখুন..."
+                          placeholder="আপনার সেরা দর ও প্রস্তাব লিখুন..."
+                          aria-label="আপনার প্রস্তাব বা মন্তব্য লিখুন"
                           autoFocus
+                          disabled={submittingComment}
                           className={`flex-1 px-3 py-2 rounded-xl text-sm outline-none border transition-colors ${
                             darkMode
-                              ? "bg-[#1B2420] border-[#26332d] text-gray-200 placeholder:text-gray-500 focus:border-[#9ece6a]/50"
-                              : "bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400 focus:border-emerald-300"
+                              ? "bg-[#1B2420] border-[#26332d] text-gray-200 placeholder:text-gray-500 focus:border-[#9ece6a]/60"
+                              : "bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400 focus:border-emerald-400"
                           }`}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setActiveCommentBox(null)}
+                          disabled={submittingComment}
+                          aria-label="বাতিল করুন"
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleAddComment(demandId)}
-                          aria-label="Send comment"
-                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#316312] text-white hover:bg-[#264d0e] transition-colors flex-shrink-0"
+                          disabled={submittingComment || !commentText.trim()}
+                          aria-label="প্রস্তাব পাঠান"
+                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#316312] text-white hover:bg-[#264d0e] dark:bg-[#8cc655] dark:text-[#111a17] dark:hover:bg-[#7bb344] transition-colors flex-shrink-0 disabled:opacity-50 cursor-pointer shadow-sm"
                         >
-                          <Send className="w-4 h-4" />
+                          {submittingComment ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
                         </motion.button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => handleCommentClick(demandId)}
-                        className={`flex items-center gap-2 text-sm font-semibold self-start transition-colors ${
-                          darkMode
-                            ? "text-gray-400 hover:text-[#9ece6a]"
-                            : "text-gray-600 hover:text-emerald-700"
-                        }`}
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        মন্তব্য / প্রস্তাব করুন
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCommentClick(demandId)}
+                          className={`flex items-center gap-2 text-xs sm:text-sm font-bold self-start transition-colors min-h-[38px] px-3.5 py-1.5 rounded-xl border cursor-pointer ${
+                            darkMode
+                              ? "bg-[#111a17] border-[#26332d] text-gray-300 hover:text-[#9ece6a] hover:border-[#9ece6a]/40"
+                              : "bg-emerald-50/50 border-emerald-200/80 text-emerald-800 hover:bg-emerald-100/70"
+                          }`}
+                        >
+                          <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-[#9ece6a]" />
+                          <span>মন্তব্য বা দরপ্রস্তাব করুন</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </motion.div>
